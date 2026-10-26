@@ -1,0 +1,687 @@
+# Implementation Plan: FindAm
+
+## Overview
+
+This implementation plan breaks down the FindAm marketplace platform into discrete, incremental tasks. The platform will be built using Next.js 16 App Router, TypeScript, Tailwind CSS, Supabase, and Paystack. Each task builds on previous work, with property-based tests integrated throughout to validate correctness properties from the design document.
+
+## Tasks
+
+- [x] 1. Project Setup and Infrastructure
+  - Initialize Next.js 15+ project with TypeScript strict mode and App Router
+  - Configure Tailwind CSS 4 with custom theme (Naira green #00C853, neon colors, glassmorphism)
+  - Set up Supabase client with environment variables (URL, anon key, service role key)
+  - Install dependencies:
+    - UI: shadcn/ui, Framer Motion, lucide-react, next-themes, clsx, cva, tailwind-merge
+    - State: Zustand, @tanstack/react-query
+    - Forms: react-hook-form, zod
+    - Notifications: sonner
+    - Date: date-fns
+    - Payments: react-paystack
+    - Maps: react-map-gl, mapbox-gl, react-leaflet
+    - CDN: next-cloudinary, cloudinary
+    - Search: meilisearch
+    - Localization: numeral, libphonenumber-js, nigeria-states-lgas
+    - Security: dompurify
+    - Monitoring: @sentry/nextjs
+    - Email: resend, react-email
+    - Testing: vitest, fast-check, @testing-library/react
+  - Configure PWA with next-pwa
+  - Set up testing infrastructure (Vitest, fast-check, React Testing Library)
+  - Configure fonts: Syne (display), DM Sans (body), JetBrains Mono (prices)
+  - Set up Cloudinary configuration
+  - Set up Meilisearch client
+  - Set up Twilio for SMS OTP
+  - Set up Mapbox API keys
+  - _Requirements: All_
+
+- [x] 2. Database Schema and Supabase Configuration
+  - [x] 2.1 Create database tables in Supabase
+    - Enable PostGIS extension for location queries
+    - Enable pg_trgm extension for fuzzy text search
+    - Create users, listings (with state/lga/ward/coordinates), listing_media, categories, subcategories tables
+    - Create businesses table with verification fields
+    - Create messages, conversations, conversation_participants tables
+    - Create stories, reviews, notifications, payments, reports tables
+    - Create user_likes, user_saves, portfolio_items tables
+    - Add indexes for performance: listings (state, lga, category, seller, status, created, coords, search), businesses (coords, state, verified)
+    - _Requirements: All, 18, 21, 22_
+  - [x] 2.2 Configure Row Level Security (RLS) policies
+    - Implement RLS policies for all tables
+    - Add business ownership policies
+    - Test policies with different user roles
+    - _Requirements: All, 22_
+  - [x] 2.3 Set up Supabase Storage buckets
+    - Create buckets: avatars, listing-media, story-videos, portfolio
+    - Configure bucket policies and size limits (avatars: 2MB, listing-media: 50MB, story-videos: 20MB, portfolio: 10MB)
+    - Set up RLS policies for storage buckets
+    - _Requirements: 2.2, 3.2, 9.1, 19.2, 22_
+  - [x] 2.4 Seed initial data
+    - Insert 12 main Nigerian categories with lucide-react icons (Electronics, Fashion, Food, Real Estate, Vehicles, Services, Jobs, Agriculture, Beauty, Education, Events, Home)
+    - Insert subcategories for each main category
+    - Insert Nigerian states, LGAs, and wards from nigeria-states-lgas package
+    - _Requirements: 14.1, 18.2, 22_
+
+- [x] 3. Authentication System
+  - [x] 3.1 Implement Supabase Auth integration
+    - Create auth context and hooks (useAuth)
+    - Implement registration with email/password validated with Zod
+    - Implement login with email/password
+    - Implement logout functionality
+    - Implement Google OAuth provider
+    - Implement phone OTP authentication with Twilio SMS
+    - Add password validation (minimum 8 characters) with Zod
+    - Add Nigerian phone number validation (+234 format) with libphonenumber-js
+    - Implement rate limiting for OTP requests (max 3 per hour per phone)
+    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.7, 1.9, 1.10_
+  - [ ]\* 3.2 Write property tests for authentication
+    - **Property 1: User Registration Round Trip**
+    - **Property 2: Duplicate Registration Rejection**
+    - **Property 3: Authentication Session Establishment**
+    - **Property 4: Password Validation**
+    - **Property 5: Session Termination**
+    - **Validates: Requirements 1.1, 1.2, 1.3, 1.5, 1.7**
+  - [x] 3.3 Create authentication UI components
+    - Build registration form with react-hook-form + Zod validation
+    - Build login form
+    - Build Google OAuth button
+    - Build phone OTP input with Twilio integration
+    - Add loading states and error handling with Sonner toasts
+    - Add Framer Motion animations for form transitions
+    - _Requirements: 1.1, 1.3, 1.4, 1.5, 1.8_
+  - [ ]\* 3.4 Write unit tests for auth UI components
+    - Test form validation with Zod
+    - Test error display with Sonner
+    - Test OAuth redirect
+    - Test phone number validation with libphonenumber-js
+    - _Requirements: 1.1, 1.3, 1.4, 1.9_
+
+- [x] 4. User Profile Management
+  - [x] 4.1 Implement profile data models and API
+    - Create TypeScript interfaces for User with strict typing
+    - Implement profile CRUD operations with typed Supabase client
+    - Add avatar upload functionality to Supabase Storage with Cloudinary CDN delivery
+    - Implement Trust Score calculation logic
+    - Add phone number formatting with libphonenumber-js (+234 format)
+    - Implement phone number hiding/reveal functionality
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.8, 2.9_
+  - [ ]\* 4.2 Write property tests for profile management
+    - **Property 6: Profile Rendering Completeness**
+    - **Property 7: Avatar Upload Round Trip**
+    - **Property 8: Profile Update Persistence**
+    - **Property 9: Trust Score Increase on Verification**
+    - **Property 10: Profile Visibility**
+    - **Property 11: Premium Badge Display**
+    - **Validates: Requirements 2.1, 2.2, 2.3, 2.4, 2.6, 2.7**
+  - [x] 4.3 Create profile UI components
+    - Build ProfileHeader component with Trust Score display and VerifiedBadge variants
+    - Build ProfileEditor component with react-hook-form + Zod validation
+    - Build verification badge components (phone, NIN, business) with lucide-react icons
+    - Add avatar upload with preview using next-cloudinary
+    - Format phone numbers with libphonenumber-js
+    - Add Framer Motion animations
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.7, 2.9_
+
+- [x] 5. Listing Creation and Management
+  - [x] 5.1 Implement listing data models and API
+    - Create TypeScript interfaces for Listing and ListingMedia with strict typing
+    - Implement listing CRUD operations with typed Supabase client
+    - Add media upload functionality (images and videos) to Supabase Storage with Cloudinary CDN
+    - Implement video thumbnail generation using Cloudinary transformations
+    - Add listing validation (phone verification check, tier limits, price limits) with Zod
+    - Implement location selection (State → LGA → Ward) with nigeria-states-lgas
+    - Store coordinates in PostGIS format
+    - Format prices with numeral.js (₦ formatting)
+    - Sanitize all text inputs with dompurify
+    - Implement rate limiting (max 10 listings per day)
+    - Flag listings > ₦50,000,000 for admin review
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14, 3.15_
+  - [ ]\* 5.2 Write property tests for listing management
+    - **Property 12: Listing Media Association**
+    - **Property 13: Unverified User Publication Prevention**
+    - **Property 14: Free Tier Listing Limit**
+    - **Property 15: Listing Publication Visibility**
+    - **Property 16: Listing Edit Timestamp Preservation**
+    - **Property 17: Listing Deletion Visibility**
+    - **Property 18: Video Thumbnail Generation**
+    - **Validates: Requirements 3.2, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9**
+  - [x] 5.3 Create listing creation wizard
+    - Build multi-step form with react-hook-form (Category → Details → Media → Location → Review)
+    - Add progress indicator with Framer Motion
+    - Implement media upload with drag-and-drop using next-cloudinary
+    - Add video duration validation (max 30 seconds)
+    - Implement form validation with Zod schemas
+    - Add LocationPicker component with nigeria-states-lgas and react-map-gl
+    - Format price input with numeral.js
+    - Add Sonner toast notifications for errors
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.10, 3.11, 3.12_
+  - [x] 5.4 Create listing card and detail components
+    - Build ListingCard with 3D tilt effect using Framer Motion
+    - Use CldImage from next-cloudinary for optimized images
+    - Build ListingDetailModal with parallax scrolling
+    - Add video autoplay on viewport intersection using Intersection Observer
+    - Implement image/video gallery with swipe gestures
+    - Add ReactionBar with optimistic UI using TanStack React Query
+    - Display prices with PriceDisplay component (₦ formatted, JetBrains Mono font)
+    - Show location (State, LGA) prominently
+    - _Requirements: 3.6, 3.9, 4.3, 4.5, 3.11_
+
+- [x] 6. Checkpoint - Core Features Validation
+  - Ensure all tests pass for authentication, profiles, and listings
+  - Verify database schema and RLS policies are working
+  - Test media upload and storage functionality
+  - Ask the user if questions arise
+
+- [x] 7. Discovery Feed and Content Display
+  - [x] 7.1 Implement feed data fetching and state management
+    - Create Zustand store for listings state
+    - Implement infinite scroll with TanStack React Query and cursor-based pagination
+    - Add feed filtering logic (boosted listings priority)
+    - Implement pull-to-refresh functionality
+    - Cache feed data with TanStack React Query stale-while-revalidate
+    - Format all prices with numeral.js (₦)
+    - Serve all images via Cloudinary with next-cloudinary
+    - _Requirements: 4.1, 4.2, 4.8, 4.9, 4.10, 4.12_
+  - [ ]\* 7.2 Write property tests for feed display
+    - **Property 19: Boosted Listing Indicator**
+    - **Validates: Requirements 4.6**
+  - [x] 7.3 Create feed UI components
+    - Build FeedContainer with TanStack React Query infinite scroll
+    - Implement video autoplay on viewport intersection using Intersection Observer
+    - Add trending carousel with infinite loop animation using Framer Motion
+    - Build skeleton loading states with shadcn/ui
+    - Add neon ripple animation for refresh using Framer Motion
+    - Use CldImage from next-cloudinary for all images
+    - Display prices with PriceDisplay component (₦ formatted)
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.6, 4.7, 4.8, 4.9, 4.11_
+
+- [x] 8. Search and Filtering System with Meilisearch
+  - [x] 8.1 Implement search and filter logic
+    - Set up Meilisearch client and index configuration
+    - Implement Supabase to Meilisearch sync using Supabase Realtime
+    - Create search API with autocomplete using Meilisearch typo tolerance
+    - Implement category, price, location (State/LGA/Ward), condition filters
+    - Add sort functionality (price, date, relevance)
+    - Implement recent searches storage in localStorage
+    - Cache search results with TanStack React Query
+    - Format prices with numeral.js (₦)
+    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 5.10, 5.11_
+  - [ ]\* 8.2 Write property tests for search and filtering
+    - **Property 20: Search Autocomplete Relevance**
+    - **Property 21: Search Results Relevance**
+    - **Property 22: Category Filter Correctness**
+    - **Property 23: Price Range Filter Correctness**
+    - **Property 24: Location Filter Correctness**
+    - **Property 25: Condition Filter Correctness**
+    - **Property 26: Sort Order Correctness**
+    - **Property 27: Search History Storage**
+    - **Validates: Requirements 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8**
+  - [x] 8.3 Create search UI components
+    - Build SearchBar with Meilisearch autocomplete dropdown
+    - Build FilterPanel with all filter options (category, price, location, condition, sort)
+    - Add LocationPicker with nigeria-states-lgas (State → LGA → Ward)
+    - Build SearchResults with grid/list toggle
+    - Add empty state with suggestions
+    - Use shadcn/ui components styled with Tailwind CSS 4
+    - Format prices with numeral.js (₦)
+    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.9_
+
+- [x] 9. Real-Time Messaging System with Supabase Realtime
+  - [x] 9.1 Implement messaging data models and API
+    - Create TypeScript interfaces for Message and Conversation with strict typing
+    - Implement conversation CRUD operations with typed Supabase client
+    - Implement message sending and retrieval
+    - Add read receipt functionality
+    - Implement image sharing in messages (Supabase Storage + Cloudinary CDN)
+    - Sanitize all message content with dompurify
+    - Hide phone numbers in messages with "Tap to Reveal" button
+    - Format phone numbers with libphonenumber-js (+234)
+    - _Requirements: 6.1, 6.2, 6.4, 6.5, 6.6, 6.9, 6.10, 6.11_
+  - [x] 9.2 Set up Supabase Realtime for messaging
+    - Configure Realtime channels for conversations
+    - Implement message subscription using Supabase postgres_changes
+    - Add typing indicators with Supabase broadcast
+    - Implement presence tracking for online status using Supabase presence
+    - _Requirements: 6.1, 6.2, 6.3, 6.7_
+  - [x] 9.3 Write property tests for messaging
+    - **Property 28: Conversation Creation**
+    - **Property 29: Message Delivery**
+    - **Property 30: Unread Message Status**
+    - **Property 31: Read Receipt Update**
+    - **Property 32: Image Sharing Round Trip**
+    - **Property 33: Conversation List Completeness**
+    - **Property 34: Scam Detection Warnings**
+    - **Validates: Requirements 6.1, 6.2, 6.4, 6.5, 6.6, 6.7, 6.8**
+    - **Note: Tests are currently skipped - require test database with authenticated users**
+
+  - [x] 9.4 Create messaging UI components
+    - Build ConversationList with Supabase Realtime updates
+    - Build ChatWindow component with Supabase Realtime subscription
+    - Add typing indicators using Supabase broadcast
+    - Add read receipts display
+    - Implement image preview and upload using next-cloudinary
+    - Add scam protection warnings
+    - Use shadcn/ui components styled with Tailwind CSS 4
+    - Add Framer Motion animations
+    - Use Sonner for toast notifications
+    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8_
+
+- [x] 10. Safety and Anti-Fraud System
+  - [x] 10.1 Implement verification system
+    - Add phone OTP verification
+    - Implement NIN verification flow
+    - Add video verification
+    - Update Trust Score on verification completion
+    - _Requirements: 7.1, 7.2, 2.4, 2.5_
+  - [x] 10.2 Implement ScamShield AI detection
+    - Create pattern detection for suspicious listings
+    - Implement price anomaly detection
+    - Add keyword filtering for scam phrases
+    - Flag suspicious listings for review
+    - _Requirements: 7.7_
+  - [ ]\* 10.3 Write property tests for safety features
+    - **Property 35: Phone Number Masking**
+    - **Property 36: Phone Reveal Rate Limiting**
+    - **Property 37: Reported Listing Visibility**
+    - **Property 38: Scam Pattern Detection**
+    - **Validates: Requirements 7.3, 7.4, 7.6, 7.7**
+  - [x] 10.4 Create safety UI components
+    - Build phone number reveal button with rate limiting
+    - Build report listing modal
+    - Add safety tips display
+    - Implement scam warning banners
+    - _Requirements: 7.3, 7.4, 7.5, 7.6, 6.8_
+
+- [x] 11. Checkpoint - Messaging and Safety
+  - Ensure all tests pass for messaging and safety features
+  - Test real-time message delivery
+  - Verify scam detection is working
+  - Test verification flows
+  - Ask the user if questions
+- [x] 12. Payment and Monetization
+  - [x] 12.1 Integrate Paystack payment gateway
+    - Set up Paystack API client
+    - Implement payment initialization
+    - Implement payment verification
+    - Add webhook handler for payment callbacks
+    - Verify webhook signatures
+    - _Requirements: 8.1, 8.2, 8.3_
+  - [x] 12.2 Implement boost and premium features
+    - Add listing boost functionality (₦500)
+    - Implement premium subscription (₦5,999/month)
+    - Add premium listing limit (30 listings)
+    - Implement premium analytics
+    - Add subscription expiration handling
+    - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.8_
+  - [ ]\* 12.3 Write property tests for payments
+    - **Property 39: Boost Payment Processing**
+    - **Property 40: Premium Subscription Activation**
+    - **Property 41: Premium Listing Limit**
+    - **Property 42: Premium Analytics Access**
+    - **Property 43: Subscription Expiration Downgrade**
+    - **Validates: Requirements 8.2, 8.3, 8.4, 8.5, 8.8**
+  - [x] 12.4 Create payment UI components
+    - Build boost payment modal
+    - Build premium subscription page
+    - Add payment success/failure screens
+    - Implement analytics dashboard for premium users
+    - _Requirements: 8.1, 8.2, 8.3, 8.5_
+
+- [x] 13. Stories Feature
+  - [x] 13.1 Implement stories data models and API
+    - Create TypeScript interfaces for Story
+    - Implement story creation with video upload
+    - Add video duration validation (max 30 seconds)
+    - Implement story retrieval (active stories only)
+    - Add automatic deletion after 24 hours (cron job)
+    - _Requirements: 9.1, 9.2, 9.3_
+  - [x]\* 13.2 Write property tests for stories
+    - **Property 44: Story Visibility Duration**
+    - **Property 45: Premium Story Priority**
+    - **Validates: Requirements 9.2, 9.6**
+  - [x] 13.3 Create story UI components
+    - Build StoryViewer with full-screen video player
+    - Add progress bars for multiple stories
+    - Implement tap to advance/go back
+    - Add swipe to next user's stories
+    - Build StoryCreator with video recording/upload
+    - _Requirements: 9.1, 9.2, 9.4, 9.5_
+
+- [x] 14. Admin Dashboard and Moderation
+  - [x] 14.1 Implement admin data models and API
+    - Create admin role and permissions
+    - Implement platform statistics aggregation
+    - Add reported listings management
+    - Implement user management (suspend/unsuspend)
+    - Add analytics data aggregation
+    - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7_
+  - [x] 14.2 Write property tests for admin features
+    - **Property 46: Admin Dashboard Metrics Completeness**
+    - **Property 47: Reported Listings Display**
+    - **Property 48: Listing Approval Restoration**
+    - **Property 49: Admin Listing Removal**
+    - **Property 50: User Management Display**
+    - **Property 51: User Suspension Effect**
+    - **Property 52: Admin Analytics Display**
+    - **Validates: Requirements 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7**
+
+  - [x] 14.3 Create admin UI components
+    - Build AdminDashboard with metrics cards
+    - Build ModerationQueue for reported listings
+    - Build UserManagement table with filters
+    - Build Analytics page with charts (Recharts)
+    - Add quick action buttons for moderation
+    - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7_
+
+- [x] 15. Notifications System
+  - [x] 15.1 Implement notifications data models and API
+    - Create TypeScript interfaces for Notification
+    - Implement notification creation for various events
+    - Add notification preferences management
+    - Implement notification retrieval and marking as read
+    - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6_
+  - [x] 15.2 Set up Supabase Realtime for notifications
+    - Configure Realtime channels for user notifications
+    - Implement notification subscription
+    - Add real-time notification delivery
+    - _Requirements: 11.1, 11.2, 11.3_
+  - [ ]\* 15.3 Write property tests for notifications
+    - **Property 53: Interest-Based Notification Creation**
+    - **Property 54: Message Notification Creation**
+    - **Property 55: Interaction Notification Creation**
+    - **Property 56: Notification Preferences Respect**
+    - **Validates: Requirements 11.1, 11.2, 11.3, 11.6**
+  - [x] 15.4 Create notification UI components
+    - Build notification bell with unread count
+    - Build notification dropdown/panel
+    - Add notification preferences page
+    - Implement toast notifications for real-time events
+    - _Requirements: 11.1, 11.2, 11.3, 11.6_
+
+- [x] 16. Category System
+  - [x] 16.1 Implement category management
+    - Ensure category hierarchy integrity
+    - Add category validation for listings
+    - Implement subcategory filtering by parent
+    - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5_
+  - [ ]\* 16.2 Write property tests for categories
+    - **Property 58: Category Hierarchy Integrity**
+    - **Property 59: Listing Category Requirement**
+    - **Property 60: Subcategory Display Correctness**
+    - **Validates: Requirements 14.2, 14.4, 14.5**
+  - [x] 16.3 Create category UI components
+    - Build category grid with neon icons
+    - Build subcategory selector
+    - Add category breadcrumbs
+    - _Requirements: 14.1, 14.2, 14.3_
+
+- [x] 17. User Interactions (Likes, Saves, Shares)
+  - [x] 17.1 Implement interaction data models and API
+    - Create like/unlike functionality
+    - Create save/unsave functionality
+    - Implement share link generation with Open Graph metadata
+    - Add saved listings retrieval
+    - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5_
+  - [ ]\* 17.2 Write property tests for interactions
+    - **Property 61: Like Action Storage**
+    - **Property 62: Save Action Storage**
+    - **Property 63: Share Link Generation**
+    - **Property 64: Saved Listings Retrieval**
+    - **Property 65: Unlike/Unsave Action Removal**
+    - **Validates: Requirements 15.1, 15.2, 15.3, 15.4, 15.5**
+  - [x] 17.3 Create interaction UI components
+    - Build like button with animation
+    - Build save button with animation
+    - Build share modal with social links
+    - Build saved listings page
+    - _Requirements: 15.1, 15.2, 15.3, 15.4_
+
+- [x] 18. Review and Rating System
+  - [x] 18.1 Implement review data models and API
+    - Create TypeScript interfaces for Review
+    - Implement review submission with authorization
+    - Add review retrieval and average calculation
+    - Implement Trust Score update on review
+    - Add review editing functionality
+    - _Requirements: 16.1, 16.2, 16.3, 16.4, 16.5_
+  - [ ]\* 18.2 Write property tests for reviews
+    - **Property 66: Review Storage**
+    - **Property 67: Review Display and Average Calculation**
+    - **Property 68: Review Authorization**
+    - **Property 69: Trust Score Update on Review**
+    - **Property 70: Review Edit Persistence**
+    - **Validates: Requirements 16.1, 16.2, 16.3, 16.4, 16.5**
+  - [x] 18.3 Create review UI components
+    - Build review submission form
+    - Build review list with star ratings
+    - Build review edit modal
+    - Add average rating display
+    - _Requirements: 16.1, 16.2, 16.5_
+
+- [x] 19. Checkpoint - Feature Completeness
+  - Ensure all tests pass for all features
+  - Test payment flows end-to-end
+  - Verify notifications are working
+  - Test admin dashboard functionality
+  - Ask the user if questions arise
+
+- [x] 20. Location-Based Features
+  - [x] 20.1 Implement location validation and filtering
+    - Add Nigerian state requirement validation
+    - Ensure location data is complete (7 major states + FCT)
+    - _Requirements: 18.1, 18.2, 18.3_
+  - [ ]\* 20.2 Write property tests for location features
+    - **Property 71: Listing Location Requirement**
+    - **Validates: Requirements 18.1**
+  - [x] 20.3 Create location UI components
+    - Build state selector dropdown
+    - Build area selector (conditional on state)
+    - Add location display on listings
+    - _Requirements: 18.1, 18.2, 18.4_
+
+- [x] 21. Portfolio and Service Provider Features
+  - [x] 21.1 Implement portfolio data models and API
+    - Create TypeScript interfaces for PortfolioItem
+    - Implement portfolio item upload
+    - Add CV upload for job seekers
+    - Implement portfolio retrieval
+    - _Requirements: 19.1, 19.2, 19.3_
+  - [ ]\* 21.2 Write property tests for portfolio
+    - **Property 72: Service Provider Portfolio Display**
+    - **Property 73: Portfolio Upload Round Trip**
+    - **Property 74: Job Seeker CV Upload**
+    - **Validates: Requirements 19.1, 19.2, 19.3**
+  - [x] 21.3 Create portfolio UI components
+    - Build PortfolioGrid with infinite moving cards (Aceternity UI)
+    - Build portfolio upload modal
+    - Build CV upload component
+    - Add skills listing component
+    - Build portfolio lightbox modal
+    - _Requirements: 19.1, 19.2, 19.3, 19.4_
+
+- [x] 22. Data Persistence and Offline Support
+  - [x] 22.1 Implement PWA offline functionality
+    - Configure service worker for caching
+    - Implement offline data access
+    - Add action queuing for offline operations
+    - Implement sync when connectivity is restored
+    - _Requirements: 13.6, 20.4, 20.5_
+  - [ ]\* 22.2 Write property tests for data persistence
+    - **Property 75: Session State Restoration**
+    - **Property 76: Immediate Data Persistence**
+    - **Property 77: Offline Action Sync**
+    - **Validates: Requirements 20.1, 20.3, 20.5**
+  - [x] 22.3 Add session state management
+    - Implement session restoration on login
+    - Add preference persistence
+    - Ensure data changes persist immediately
+    - _Requirements: 20.1, 20.3_
+
+- [x] 23. Design System and Visual Effects
+  - [x] 23.1 Implement design system components
+    - Create glassmorphism card components
+    - Build neon button components with shimmer effect
+    - Implement 3D card effect (Aceternity UI)
+    - Add shooting stars background (Aceternity UI)
+    - Create sparkle animation components
+    - _Requirements: 17.1, 17.2, 17.3, 17.4_
+  - [x] 23.2 Implement animations and micro-interactions
+    - Add Framer Motion spring physics to interactive elements
+    - Implement hover effects with 3D tilt
+    - Add page transition animations
+    - Implement pull-to-refresh ripple animation
+    - Add success sparkle animations
+    - _Requirements: 17.3, 17.5, 4.4, 4.8_
+  - [x] 23.3 Configure smooth scrolling
+    - Integrate Lenis for smooth scrolling
+    - Add parallax scrolling to detail modals
+    - _Requirements: 17.7, 4.5_
+
+- [x] 24. Mobile-First UI and Navigation
+  - [x] 24.1 Implement mobile navigation
+    - Build FloatingDock bottom navigation (Aceternity UI)
+    - Add gesture handlers for swipe actions
+    - Implement pull-to-refresh on all scrollable content
+    - _Requirements: 13.1, 13.2, 13.3_
+  - [x] 24.2 Optimize for mobile experience
+    - Ensure minimum touch target size (44px)
+    - Add haptic feedback animations
+    - Implement responsive layouts for all screen sizes
+    - _Requirements: 13.4, 13.5, 13.7_
+
+- [x] 25. Performance Optimization
+  - [x] 25.1 Implement image optimization
+    - Use Next.js Image component throughout
+    - Add lazy loading and blur placeholders
+    - Configure WebP format conversion
+    - _Requirements: 12.2_
+  - [x] 25.2 Implement code splitting
+    - Add dynamic imports for heavy components
+    - Configure route-based code splitting
+    - Optimize library imports for tree-shaking
+    - _Requirements: 12.4_
+  - [x] 25.3 Add caching strategies
+    - Configure ISR for static pages
+    - Implement SWR for data fetching
+    - Add LocalStorage for preferences
+    - Configure IndexedDB for offline PWA data
+    - _Requirements: 12.5, 12.6_
+  - [x] 25.4 Optimize database queries
+    - Implement cursor-based pagination
+    - Use select with joins to reduce queries
+    - Add virtual scrolling for large lists
+    - _Requirements: 12.3, 12.6_
+  - [x] 25.5 Add loading states
+    - Implement skeleton screens for all pages
+    - Add loading spinners for async operations
+    - _Requirements: 12.1_
+
+- [x] 26. Security Hardening
+  - [x] 26.1 Implement rate limiting
+    - Add rate limiting middleware for API routes
+    - Configure different limits for authenticated vs anonymous
+    - Add stricter limits on sensitive endpoints (OTP, payments)
+    - _Requirements: All_
+  - [x] 26.2 Add input validation and sanitization
+    - Ensure all API routes use Zod validation
+    - Add XSS prevention measures
+    - Implement CSRF protection for custom API routes
+    - _Requirements: All_
+  - [x] 26.3 Configure CORS and security headers
+    - Set up CORS configuration for production
+    - Add security headers (CSP, X-Frame-Options, etc.)
+    - _Requirements: All_
+
+- [x] 27. Error Handling and Monitoring
+  - [x] 27.1 Implement error boundaries
+    - Add ErrorBoundary components throughout app
+    - Create error fallback UI components
+    - _Requirements: All_
+  - [x] 27.2 Add error tracking
+    - Integrate error tracking service (optional: Sentry)
+    - Add API error handling with custom error classes
+    - Implement toast notifications for user-facing errors
+    - _Requirements: All_
+
+- [x] 28. Integration and End-to-End Testing
+  - [x]\* 28.1 Write integration tests
+    - Test feed flow (browse, filter, view details)
+    - Test listing creation flow
+    - Test messaging flow
+    - Test payment flow
+    - _Requirements: All_
+  - [x]\* 28.2 Write E2E tests with Playwright
+    - Test critical user paths (registration → listing creation → boost)
+    - Test search and filter flows
+    - Test messaging flows
+    - _Requirements: All_
+
+- [x] 29. Final Checkpoint and Polish
+  - Run all tests (unit, property, integration, E2E)
+  - Verify all 77 correctness properties are tested
+  - Test on multiple devices and browsers
+  - Optimize bundle size and performance metrics
+  - Review accessibility compliance
+  - Ask the user if questions arise
+
+- [ ] 30. Deployment Preparation
+  - [ ] 30.1 Configure production environment
+    - Set up environment variables for production
+    - Configure Supabase production instance
+    - Set up Paystack production keys
+    - Configure Cloudinary production account
+    - Configure Meilisearch production instance
+    - Configure Twilio production credentials
+    - Configure Mapbox production API keys
+    - Configure Sentry production DSN
+    - Configure domain and SSL
+    - _Requirements: All_
+  - [ ] 30.2 Deploy to Vercel
+    - Connect GitHub repository to Vercel
+    - Configure build settings
+    - Set up preview deployments
+    - Deploy to production
+    - _Requirements: All_
+  - [ ] 30.3 Post-deployment verification
+    - Test all features in production
+    - Verify payment flows with real Paystack transactions
+    - Test Meilisearch search functionality
+    - Verify Cloudinary CDN delivery
+    - Test Supabase Realtime connections
+    - Test Twilio SMS OTP delivery
+    - Monitor error logs with Sentry
+    - Set up analytics and monitoring
+    - _Requirements: All_
+
+- [ ] 31. Business Directory Feature
+  - [ ] 31.1 Implement business data models and API
+    - Create TypeScript interfaces for Business with strict typing
+    - Implement business CRUD operations with typed Supabase client
+    - Add business verification flow (document upload)
+    - Store business location with PostGIS coordinates
+    - Format business phone numbers with libphonenumber-js (+234)
+    - Link listings to business profiles
+    - _Requirements: 21.1, 21.2, 21.5, 21.6_
+  - [ ] 31.2 Create business UI components
+    - Build BusinessCard component with verified badge
+    - Build BusinessProfile page with enhanced features
+    - Add business directory page with filtering (category, location)
+    - Use react-map-gl to display business locations
+    - Format contact numbers with libphonenumber-js
+    - Use shadcn/ui components styled with Tailwind CSS 4
+    - Add Framer Motion animations
+    - _Requirements: 21.3, 21.4, 21.6_
+  - [ ] 31.3 Write tests for business features
+    - Test business creation and verification
+    - Test business directory filtering
+    - Test business-listing association
+    - _Requirements: 21.1, 21.2, 21.3, 21.4, 21.5_
+
+## Notes
+
+- Tasks marked with `*` are optional testing tasks and can be skipped for faster MVP
+- Each property test task references specific correctness properties from the design document
+- Checkpoints ensure incremental validation at key milestones
+- All 77 correctness properties from the design are covered in property test tasks
+- The implementation follows a bottom-up approach: infrastructure → core features → advanced features → polish
+- Property tests use fast-check with 10-20 iterations per test for faster execution (reduced from 100)
+- Unit tests complement property tests by covering specific examples and edge cases

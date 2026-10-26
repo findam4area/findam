@@ -1,0 +1,1754 @@
+# Implementation Plan: FindAm Marketplace Enhancements
+
+## Overview
+
+This implementation plan breaks down the 29 comprehensive marketplace enhancements plus 4 unique features into actionable coding tasks. The plan follows a 12-phase approach over 36 weeks, prioritizing high-impact engagement and trust features first, followed by seller tools, discovery features, and unique differentiators.
+
+The implementation uses TypeScript with Next.js 16, React, Supabase (PostgreSQL), and integrates with Paystack, Cloudinary/Mux, OpenAI, and logistics partner APIs.
+
+## Tasks
+
+### Phase 1: Foundation (Weeks 1-3)
+
+- [x] 1. Set up video feed infrastructure and database schema
+  - [x] 1.1 Create video_listings table with duration, URL, and analytics fields
+    - Add migration for video_listings table with constraints
+    - Create indexes on listing_id and views_count
+    - _Requirements: 1.1, 1.8_
+  - [ ]\* 1.2 Write property test for video duration validation
+    - **Property 1: Video Duration Validation**
+    - **Validates: Requirements 1.1**
+  - [x] 1.3 Set up Cloudinary or Mux integration for video processing
+    - Configure API credentials in environment variables
+    - Create video upload service with transcoding
+    - Implement thumbnail generation
+    - _Requirements: 1.1_
+  - [x] 1.4 Create VideoListing interface and validation functions
+    - Implement TypeScript interfaces from design document
+    - Add validation for duration between 15-60 seconds
+    - _Requirements: 1.1_
+
+- [x] 2. Implement video feed UI components
+  - [x] 2.1 Build VideoFeedContainer with auto-play logic
+    - Implement vertical scroll detection
+    - Add auto-play on scroll into view
+    - Handle audio mute/unmute on tap
+    - _Requirements: 1.2, 1.3_
+  - [x] 2.2 Create VideoPlayer component with controls
+    - Implement video playback with loop
+    - Add tap-to-toggle audio
+    - Display loading states
+    - _Requirements: 1.2, 1.7_
+  - [x] 2.3 Build VideoOverlay component for product information
+    - Display product title, price, seller info
+    - Add tap handler to navigate to listing details
+    - Use Lucide Icons for action buttons
+    - _Requirements: 1.4, 1.9_
+  - [ ]\* 2.4 Write property test for video overlay completeness
+    - **Property 2: Video Overlay Completeness**
+    - **Validates: Requirements 1.4**
+  - [x] 2.5 Implement video preloading queue
+    - Preload next 2 videos in sequence
+    - Manage memory and cleanup
+    - _Requirements: 1.6_
+  - [ ]\* 2.6 Write property test for video preload queue
+    - **Property 3: Video Preload Queue**
+    - **Validates: Requirements 1.6**
+
+- [x] 3. Create video feed API endpoints
+  - [x] 3.1 Implement GET /api/video-feed endpoint
+    - Add pagination support
+    - Filter by category_id
+    - Return video URLs with preload data
+    - _Requirements: 1.1, 1.6_
+  - [x] 3.2 Implement POST /api/video-listings endpoint
+    - Accept video file upload
+    - Process video through Cloudinary/Mux
+    - Create video_listings record
+    - Return CDN URLs
+    - _Requirements: 1.1_
+  - [x] 3.3 Add view tracking endpoint
+    - Track view duration for analytics
+    - Update views_count on video_listings
+    - _Requirements: 1.8_
+  - [ ]\* 3.4 Write property test for view tracking
+    - **Property 4: View Tracking**
+    - **Validates: Requirements 1.8**
+
+- [x] 4. Set up escrow payment system database and infrastructure
+  - [x] 4.1 Create escrow_transactions table
+    - Add fields for buyer, seller, amount, fee, status
+    - Add auto_release_at timestamp field
+    - Create indexes on status and auto_release_at
+    - _Requirements: 4.1, 4.4, 4.8_
+  - [x] 4.2 Create wallets table
+    - Add available_balance and pending_balance fields
+    - Add total_earned and total_withdrawn tracking
+    - Create unique index on user_id
+    - _Requirements: 5.1, 5.2_
+  - [x] 4.3 Create wallet_transactions table
+    - Track all credits and debits
+    - Store balance_after for audit trail
+    - _Requirements: 5.7_
+  - [x] 4.4 Create withdrawals table
+    - Store bank account details
+    - Track withdrawal status and Paystack reference
+    - _Requirements: 5.3, 5.4_
+  - [ ]\* 4.5 Write property test for escrow fee calculation
+    - **Property 13: Escrow Fee Calculation**
+    - **Validates: Requirements 4.6**
+
+- [x] 5. Implement escrow payment flow
+  - [x] 5.1 Create EscrowService class
+    - Implement initializeEscrow method
+    - Integrate with Paystack payment API
+    - Create escrow transaction with 'held' status
+    - _Requirements: 4.1, 4.9_
+  - [ ]\* 5.2 Write property test for escrow payment holding
+    - **Property 10: Escrow Payment Holding**
+    - **Validates: Requirements 4.1**
+  - [x] 5.3 Implement confirmDelivery method
+    - Update escrow status to 'released'
+    - Credit seller wallet within 24 hours
+    - Send notifications to both parties
+    - _Requirements: 4.3, 4.10_
+  - [ ]\* 5.4 Write property test for escrow release on confirmation
+    - **Property 11: Escrow Release on Confirmation**
+    - **Validates: Requirements 4.3**
+  - [x] 5.5 Implement auto-release mechanism
+    - Create cron job to check auto_release_at timestamps
+    - Release funds after 7 days if not confirmed
+    - _Requirements: 4.4_
+  - [ ]\* 5.6 Write property test for escrow auto-release
+    - **Property 12: Escrow Auto-Release**
+    - **Validates: Requirements 4.4**
+  - [x] 5.7 Implement dispute handling
+    - Add disputeTransaction method
+    - Freeze funds with 'disputed' status
+    - _Requirements: 4.5_
+
+- [x] 6. Implement wallet system
+  - [x] 6.1 Create WalletService class
+    - Implement getBalance method
+    - Implement creditWallet method
+    - Implement debitWallet method
+    - Track all transactions in wallet_transactions
+    - _Requirements: 5.1, 5.2, 5.7, 5.8_
+  - [ ]\* 6.2 Write property test for wallet balance tracking
+    - **Property 15: Wallet Balance Tracking**
+    - **Validates: Requirements 5.1**
+  - [ ]\* 6.3 Write property test for wallet credit on escrow release
+    - **Property 16: Wallet Credit on Escrow Release**
+    - **Validates: Requirements 5.2**
+  - [x] 6.4 Implement withdrawal functionality
+    - Create requestWithdrawal method
+    - Integrate with Paystack transfer API
+    - Apply fee calculation (₦100 for <₦10k, free for ≥₦20k)
+    - Process within 24 hours on business days
+    - _Requirements: 5.3, 5.4, 5.5, 5.6_
+  - [ ]\* 6.5 Write property test for withdrawal fee calculation
+    - **Property 17: Withdrawal Fee Calculation**
+    - **Validates: Requirements 5.4, 5.5**
+  - [x] 6.6 Add additional verification for large withdrawals
+    - Require extra verification for amounts >₦100,000
+    - _Requirements: 5.10_
+
+- [x] 7. Create escrow and wallet API endpoints
+  - [x] 7.1 Implement POST /api/escrow/initialize endpoint
+    - Accept listing_id and amount
+    - Return Paystack payment URL
+    - Create escrow transaction record
+    - _Requirements: 4.1_
+  - [x] 7.2 Implement POST /api/escrow/:id/confirm-delivery endpoint
+    - Accept rating and review
+    - Trigger escrow release
+    - _Requirements: 4.3_
+  - [x] 7.3 Implement POST /api/escrow/:id/dispute endpoint
+    - Accept reason and evidence
+    - Update status to 'disputed'
+    - _Requirements: 4.5_
+  - [x] 7.4 Implement GET /api/wallet endpoint
+    - Return wallet balance and recent transactions
+    - _Requirements: 5.1, 5.7_
+  - [x] 7.5 Implement POST /api/wallet/withdraw endpoint
+    - Accept amount and bank details
+    - Create withdrawal request
+    - _Requirements: 5.3_
+  - [x] 7.6 Implement GET /api/wallet/transactions endpoint
+    - Return paginated transaction history
+    - Filter by category
+    - _Requirements: 5.7_
+
+- [x] 8. Set up AI content moderation infrastructure
+  - [x] 8.1 Create moderation_results table
+    - Store confidence scores and violations
+    - Track moderation actions
+    - _Requirements: 6.1, 6.6_
+  - [x] 8.2 Create fraud_scores table
+    - Store user risk scores and factors
+    - Track last calculation timestamp
+    - _Requirements: 24.1, 24.4_
+  - [x] 8.3 Configure OpenAI API integration
+    - Set up API credentials
+    - Create moderation service wrapper
+    - _Requirements: 6.1_
+
+- [x] 9. Implement AI moderation service
+  - [x] 9.1 Create ContentModerationService class
+    - Implement scanListing method
+    - Scan title, description, and images
+    - Detect prohibited content and scam indicators
+    - _Requirements: 6.1, 6.2, 6.4_
+  - [ ]\* 9.2 Write property test for moderation scan on listing creation
+    - **Property 19: Moderation Scan on Listing Creation**
+    - **Validates: Requirements 6.1**
+  - [ ]\* 9.3 Write property test for scam indicator detection
+    - **Property 20: Scam Indicator Detection**
+    - **Validates: Requirements 6.2**
+  - [x] 9.4 Implement duplicate detection
+    - Calculate similarity score between listings
+    - Flag duplicates with ≥95% similarity
+    - _Requirements: 6.3_
+  - [ ]\* 9.5 Write property test for duplicate listing detection
+    - **Property 21: Duplicate Listing Detection**
+    - **Validates: Requirements 6.3**
+  - [x] 9.6 Implement confidence-based actions
+    - Auto-reject listings with >85% confidence violations
+    - Flag for manual review between 60-85% confidence
+    - _Requirements: 6.5, 6.6_
+  - [ ]\* 9.7 Write property test for high-confidence auto-rejection
+    - **Property 23: High-Confidence Auto-Rejection**
+    - **Validates: Requirements 6.6**
+  - [x] 9.8 Add image content scanning
+    - Integrate image recognition for inappropriate content
+    - _Requirements: 6.7_
+
+- [x] 10. Create moderation API endpoints and admin queue
+  - [x] 10.1 Implement POST /api/moderation/scan-listing endpoint
+    - Trigger moderation scan
+    - Return moderation result
+    - _Requirements: 6.1_
+  - [x] 10.2 Implement GET /api/moderation/queue endpoint
+    - Return flagged listings for manual review
+    - Support pagination and status filtering
+    - _Requirements: 6.6_
+  - [x] 10.3 Implement POST /api/moderation/:id/review endpoint
+    - Allow admin to approve or reject
+    - Store admin notes
+    - _Requirements: 6.6_
+  - [x] 10.4 Build ModerationQueue admin component
+    - Display flagged listings
+    - Show confidence scores and violations
+    - Add approve/reject actions
+    - _Requirements: 6.6_
+
+- [x] 11. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+### Phase 2: Seller Tools (Weeks 4-6)
+
+- [x] 12. Set up seller storefront database and infrastructure
+  - [x] 12.1 Create storefronts table
+    - Add custom_url, banner_url, theme_color fields
+    - Add featured_listings array
+    - Create unique index on custom_url
+    - _Requirements: 9.1, 9.4, 9.8_
+  - [x] 12.2 Create seller_analytics table
+    - Store daily, weekly, monthly metrics
+    - Add geographic and traffic source breakdowns
+    - _Requirements: 10.1, 10.3, 10.4_
+  - [x] 12.3 Create inventory_items table
+    - Track stock_quantity and variants
+    - Add low_stock_threshold field
+    - _Requirements: 11.1, 11.4, 11.8_
+
+- [x] 13. Implement custom storefront functionality
+  - [x] 13.1 Create StorefrontService class
+    - Implement getStorefront method
+    - Implement updateStorefront method
+    - Handle custom URL validation
+    - _Requirements: 9.1, 9.4_
+  - [ ]\* 13.2 Write property test for storefront URL routing
+    - **Property 30: Storefront URL Routing**
+    - **Validates: Requirements 9.1**
+  - [x] 13.3 Build storefront page at /store/[username]
+    - Display seller profile with avatar, bio, badges
+    - Show all active listings in grid
+    - Display seller statistics
+    - _Requirements: 9.1, 9.2, 9.3, 9.5_
+  - [ ]\* 13.4 Write property test for storefront profile completeness
+    - **Property 31: Storefront Profile Completeness**
+    - **Validates: Requirements 9.2**
+  - [x] 13.5 Create StorefrontCustomizer component
+    - Allow banner image upload
+    - Add theme color picker
+    - Support bio editing
+    - _Requirements: 9.4_
+  - [x] 13.6 Implement featured products functionality
+    - Allow selection of up to 6 featured products
+    - Display featured products at top of storefront
+    - _Requirements: 9.8_
+  - [ ]\* 13.7 Write property test for featured product limit
+    - **Property 32: Featured Product Limit**
+    - **Validates: Requirements 9.8**
+  - [x] 13.8 Add social sharing with Open Graph tags
+    - Generate meta tags for storefront pages
+    - _Requirements: 9.9_
+  - [ ] 13.9 Implement custom domain mapping for premium users
+    - Add DNS configuration support
+    - _Requirements: 9.10_
+
+- [x] 14. Build seller analytics dashboard
+  - [x] 14.1 Create AnalyticsService class
+    - Calculate views, impressions, CTR for listings
+    - Calculate conversion rates (views → messages → sales)
+    - Generate geographic breakdowns
+    - Track traffic sources
+    - _Requirements: 10.1, 10.2, 10.3, 10.7_
+  - [ ]\* 14.2 Write property test for analytics metrics display
+    - **Property 33: Analytics Metrics Display**
+    - **Validates: Requirements 10.1**
+  - [ ]\* 14.3 Write property test for conversion rate calculation
+    - **Property 34: Conversion Rate Calculation**
+    - **Validates: Requirements 10.2**
+  - [x] 14.4 Build AnalyticsDashboard component
+    - Display metrics cards for key stats using Magic UI components
+    - Show time-series graphs for past 30 days
+    - Display geographic breakdown by state/city
+    - Show top-performing listings
+    - Use Aceternity UI for collapsible sections
+    - Use Lucide Icons for visual indicators
+    - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
+  - [x] 14.5 Add response time and rate metrics
+    - Calculate average response time
+    - Track response rate percentage
+    - _Requirements: 10.6_
+  - [x] 14.6 Implement category average comparisons
+    - Calculate average selling price by category
+    - Compare seller metrics to category averages
+    - _Requirements: 10.8, 10.9_
+  - [ ]\* 14.7 Write property test for average price calculation
+    - **Property 35: Average Price Calculation**
+    - **Validates: Requirements 10.8**
+  - [x] 14.8 Add CSV export for premium users
+    - Export all analytics data to CSV
+    - _Requirements: 10.10_
+
+- [x] 15. Implement inventory management system
+  - [x] 15.1 Create InventoryService class
+    - Implement setStock method
+    - Implement decrementStock method
+    - Implement checkLowStock method
+    - _Requirements: 11.1, 11.2, 11.4_
+  - [ ]\* 15.2 Write property test for stock auto-decrement
+    - **Property 36: Stock Auto-Decrement**
+    - **Validates: Requirements 11.2**
+  - [ ]\* 15.3 Write property test for sold out status
+    - **Property 37: Sold Out Status**
+    - **Validates: Requirements 11.3**
+  - [x] 15.4 Build InventoryManager component
+    - Display all inventory items with stock levels
+    - Show low stock alerts
+    - Allow stock quantity updates
+    - _Requirements: 11.1, 11.4, 11.5_
+  - [x] 15.5 Implement low stock notifications
+    - Send alerts when stock falls below threshold
+    - _Requirements: 11.5_
+  - [ ]\* 15.6 Write property test for low stock alert
+    - **Property 38: Low Stock Alert**
+    - **Validates: Requirements 11.4**
+  - [x] 15.7 Add bulk stock update functionality
+    - Update multiple listings simultaneously
+    - _Requirements: 11.6_
+  - [x] 15.8 Implement variant stock tracking
+    - Track stock for each size/color/model separately
+    - _Requirements: 11.8, 11.9_
+  - [ ]\* 15.9 Write property test for variant stock independence
+    - **Property 39: Variant Stock Independence**
+    - **Validates: Requirements 11.9**
+  - [x] 15.10 Add inventory value calculation
+    - Calculate total inventory value based on prices
+    - _Requirements: 11.10_
+
+- [x] 16. Create seller tools API endpoints
+  - [x] 16.1 Implement GET /api/storefront/:username endpoint
+    - Return storefront configuration and listings
+    - _Requirements: 9.1_
+  - [x] 16.2 Implement PUT /api/storefront endpoint
+    - Update banner, theme, bio, featured listings
+    - _Requirements: 9.4_
+  - [x] 16.3 Implement GET /api/analytics/seller endpoint
+    - Return analytics data for specified period
+    - Support date range filtering
+    - _Requirements: 10.1_
+  - [x] 16.4 Implement GET /api/inventory endpoint
+    - Return all inventory items with stock levels
+    - _Requirements: 11.1_
+  - [x] 16.5 Implement PUT /api/inventory/:listing_id endpoint
+    - Update stock quantity and variants
+    - _Requirements: 11.1_
+  - [x] 16.6 Implement POST /api/inventory/bulk-update endpoint
+    - Update multiple inventory items at once
+    - _Requirements: 11.6_
+
+- [x] 17. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+### Phase 3: Discovery and Engagement (Weeks 7-9)
+
+- [x] 18. Set up live video streaming infrastructure
+  - [x] 18.1 Create live_sessions table
+    - Add stream_url, viewer_count, pinned_products fields
+    - Track session status (live/ended)
+    - _Requirements: 2.1, 2.2, 2.4_
+  - [x] 18.2 Create live_chat_messages table
+    - Link to session_id and user_id
+    - Store message content and timestamp
+    - _Requirements: 2.3_
+  - [x] 18.3 Set up WebRTC or streaming service integration
+    - Configure streaming credentials
+    - Set up real-time infrastructure
+    - _Requirements: 2.1_
+
+- [x] 19. Implement live video selling functionality
+  - [x] 19.1 Create LiveStreamService class
+    - Implement startSession method
+    - Implement endSession method
+    - Track viewer count in real-time
+    - _Requirements: 2.1, 2.2_
+  - [x] 19.2 Build LiveStreamPlayer component
+    - Display live video stream
+    - Show real-time viewer count
+    - _Requirements: 2.1, 2.2_
+  - [x] 19.3 Create LiveChatPanel component
+    - Display real-time chat messages
+    - Allow viewers to send messages
+    - Use Supabase Realtime for chat
+    - _Requirements: 2.3_
+  - [x] 19.4 Implement product pinning functionality
+    - Allow sellers to pin up to 5 products
+    - Display pinned product cards with buy button
+    - _Requirements: 2.4, 2.5_
+  - [ ]\* 19.5 Write property test for live session product pin limit
+    - **Property 5: Live Session Product Pin Limit**
+    - **Validates: Requirements 2.4**
+  - [x] 19.6 Add in-session purchase flow
+    - Allow purchase without leaving live session
+    - _Requirements: 2.6_
+  - [x] 19.7 Implement follower notifications
+    - Send push notifications when seller goes live
+    - _Requirements: 2.7_
+  - [x] 19.8 Add session recording and 24-hour replay
+    - Record live sessions
+    - Make available for 24 hours after broadcast
+    - _Requirements: 2.8_
+  - [x] 19.9 Implement session duration limit
+    - Automatically end sessions after 120 minutes
+    - _Requirements: 2.9_
+  - [ ]\* 19.10 Write property test for live session duration limit
+    - **Property 6: Live Session Duration Limit**
+    - **Validates: Requirements 2.9**
+  - [x] 19.11 Add AI moderation for live sessions
+    - Flag or terminate sessions violating guidelines
+    - _Requirements: 2.10_
+
+- [x] 20. Create live streaming API endpoints
+  - [x] 20.1 Implement POST /api/live-sessions endpoint
+    - Create new live session
+    - Return stream URL and credentials
+    - _Requirements: 2.1_
+  - [x] 20.2 Implement GET /api/live-sessions/:id endpoint
+    - Return session details and viewer count
+    - _Requirements: 2.2_
+  - [x] 20.3 Implement POST /api/live-sessions/:id/chat endpoint
+    - Handle chat message creation via WebSocket
+    - _Requirements: 2.3_
+  - [x] 20.4 Implement POST /api/live-sessions/:id/pin-product endpoint
+    - Pin product to live session
+    - _Requirements: 2.4_
+
+- [x] 21. Set up product comparison infrastructure
+  - [x] 21.1 Create comparison_sets table
+    - Store user_id and listing_ids array
+    - _Requirements: 3.1, 3.7_
+  - [x] 21.2 Create ComparisonService class
+    - Implement addToComparison method
+    - Implement removeFromComparison method
+    - Validate 2-4 listing limit
+    - _Requirements: 3.1, 3.6_
+
+- [x] 22. Implement product comparison UI
+  - [x] 22.1 Build ComparisonBar component
+    - Show selected items for comparison
+    - Display comparison badge on listing cards
+    - _Requirements: 3.2_
+  - [x] 22.2 Create ComparisonGrid component
+    - Display products side-by-side on desktop
+    - Show scrollable cards on mobile
+    - Compare price, condition, location, rating, specs
+    - Use Aceternity UI for animated card transitions
+    - Use Lucide Icons for comparison indicators
+    - _Requirements: 3.3, 3.4_
+  - [ ]\* 22.3 Write property test for comparison set size constraint
+    - **Property 7: Comparison Set Size Constraint**
+    - **Validates: Requirements 3.1**
+  - [ ]\* 22.4 Write property test for comparison field completeness
+    - **Property 8: Comparison Field Completeness**
+    - **Validates: Requirements 3.4**
+  - [x] 22.5 Add best value highlighting
+    - Highlight best value in each category
+    - _Requirements: 3.5_
+  - [x] 22.6 Implement comparison persistence
+    - Persist selections across page navigation
+    - _Requirements: 3.7_
+  - [ ]\* 22.7 Write property test for comparison session persistence
+    - **Property 9: Comparison Session Persistence**
+    - **Validates: Requirements 3.7**
+  - [x] 22.8 Add save comparison functionality
+    - Allow users to save comparison sets
+    - _Requirements: 3.8_
+  - [x] 22.9 Restrict comparison to same category
+    - Validate all items are in same category
+    - _Requirements: 3.10_
+
+- [x] 23. Set up personalized recommendations infrastructure
+  - [x] 23.1 Create user_behaviors table
+    - Track viewed, saved, purchased listings
+    - Store search queries and category preferences
+    - Track price range and location preferences
+    - _Requirements: 7.1, 7.5_
+  - [x] 23.2 Create RecommendationService class
+    - Implement trackInteraction method
+    - Implement generateRecommendations method
+    - Use collaborative filtering algorithm
+    - _Requirements: 7.1, 7.2_
+  - [x]\* 23.3 Write property test for user interaction tracking
+    - **Property 24: User Interaction Tracking**
+    - **Validates: Requirements 7.1**
+
+- [x] 24. Implement personalized recommendations
+  - [x] 24.1 Build recommendation generation algorithm
+    - Implement collaborative filtering
+    - Consider location, price range, category interests
+    - Update models daily
+    - _Requirements: 7.2, 7.4, 7.5_
+  - [x] 24.2 Create "Recommended for You" section
+    - Display at least 20% personalized content in feed
+    - _Requirements: 7.3, 7.6_
+  - [x]\* 24.3 Write property test for personalized content minimum
+    - **Property 25: Personalized Content Minimum**
+    - **Validates: Requirements 7.3**
+  - [x] 24.4 Add fallback for new users
+    - Show trending and popular items for users with insufficient history
+    - _Requirements: 7.7_
+  - [x] 24.5 Implement feedback collection
+    - Add thumbs up/down for recommendations
+    - _Requirements: 7.8_
+  - [x] 24.6 Exclude purchased items from recommendations
+    - Filter out previously purchased listings
+    - _Requirements: 7.9_
+  - [x]\* 24.7 Write property test for purchased item exclusion
+    - **Property 26: Purchased Item Exclusion**
+    - **Validates: Requirements 7.9**
+  - [x] 24.8 Add opt-out for personalized recommendations
+    - Respect user privacy settings
+    - _Requirements: 7.10_
+
+- [x] 25. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+### Phase 4: Trust and Safety (Weeks 10-12)
+
+- [x] 26. Implement advanced fraud detection system
+  - [x] 26.1 Create FraudDetectionEngine class
+    - Analyze user behavior patterns
+    - Detect listing frequency anomalies
+    - Identify pricing anomalies
+    - Track communication patterns
+    - _Requirements: 24.1_
+  - [ ]\* 26.2 Write property test for fraud pattern analysis
+    - **Property 76: Fraud Pattern Analysis**
+    - **Validates: Requirements 24.1**
+  - [x] 26.2 Implement risk scoring algorithm
+    - Calculate fraud score (0-100)
+    - Determine risk level (low/medium/high/critical)
+    - Weight multiple fraud factors
+    - _Requirements: 24.1, 24.8_
+  - [x] 26.3 Add suspicious activity flagging
+    - Flag accounts with multiple failed transactions
+    - Flag accounts with buyer complaints
+    - _Requirements: 24.2_
+  - [x] 26.4 Implement coordinated fraud ring detection
+    - Analyze network connections between accounts
+    - _Requirements: 24.3_
+  - [x] 26.5 Add high-risk account suspension
+    - Automatically suspend accounts with fraud score >80%
+    - _Requirements: 24.4_
+  - [ ]\* 26.6 Write property test for high-risk account suspension
+    - **Property 77: High-Risk Account Suspension**
+    - **Validates: Requirements 24.4**
+  - [x] 26.7 Implement payment pattern analysis
+    - Detect money laundering patterns
+    - Identify fraudulent transactions
+    - _Requirements: 24.5_
+  - [x] 26.8 Add duplicate account detection
+    - Cross-reference phone numbers and NIN data
+    - _Requirements: 24.6_
+  - [ ]\* 26.9 Write property test for duplicate account detection
+    - **Property 78: Duplicate Account Detection**
+    - **Validates: Requirements 24.6**
+  - [x] 26.10 Implement velocity abuse monitoring
+    - Monitor rapid account creation
+    - Monitor rapid listing posting
+    - _Requirements: 24.7_
+  - [x] 26.11 Add fraud alerts for users
+    - Alert users when interacting with flagged accounts
+    - _Requirements: 24.9_
+
+- [x] 27. Set up verified seller badge system
+  - [x] 27.1 Create verification_badges table
+    - Store tier (basic/trusted/power)
+    - Track verification types completed
+    - Store transaction count and average rating
+    - _Requirements: 15.1, 15.2, 15.4, 15.5_
+  - [x] 27.2 Create VerificationService class
+    - Implement awardBadge method
+    - Implement checkBadgeCriteria method
+    - Implement revokeBadge method
+    - _Requirements: 15.1, 15.2, 15.7_
+  - [ ]\* 27.3 Write property test for verification badge award
+    - **Property 50: Verification Badge Award**
+    - **Validates: Requirements 15.2**
+  - [ ]\* 27.4 Write property test for trusted seller badge criteria
+    - **Property 51: Trusted Seller Badge Criteria**
+    - **Validates: Requirements 15.4**
+
+- [x] 28. Implement verification badge functionality
+  - [x] 28.1 Build VerificationBadge component
+    - Display badge on seller profiles and listing cards
+    - Show different colors for tiers (green/blue/gold)
+    - _Requirements: 15.1, 15.8_
+  - [x] 28.2 Implement badge criteria checking
+    - Award Basic badge for phone + NIN + video verification
+    - Award Trusted badge for 10+ transactions with 4.5+ rating
+    - Award Power badge for 50+ transactions with 4.8+ rating
+    - _Requirements: 15.2, 15.4, 15.5_
+  - [x] 28.3 Add badge details modal
+    - Show verification details and criteria on tap
+    - _Requirements: 15.6_
+  - [x] 28.4 Implement badge revocation logic
+    - Revoke if rating drops below threshold
+    - Revoke on policy violations
+    - _Requirements: 15.7_
+  - [ ]\* 28.5 Write property test for badge revocation
+    - **Property 52: Badge Revocation**
+    - **Validates: Requirements 15.7**
+  - [x] 28.6 Prioritize verified sellers in search
+    - Boost verified sellers in search rankings
+    - _Requirements: 15.9_
+  - [x] 28.7 Send badge achievement notifications
+    - Notify sellers when they achieve new badge tiers
+    - _Requirements: 15.10_
+
+- [x] 29. Set up logistics integration infrastructure
+  - [x] 29.1 Create shipments table
+    - Store tracking number, addresses, status
+    - Track delivery person details
+    - _Requirements: 8.2, 8.4, 8.6, 8.9_
+  - [x] 29.2 Create LogisticsService class
+    - Implement getQuotes method for all partners
+    - Implement createShipment method
+    - Implement trackShipment method
+    - _Requirements: 8.1, 8.2, 8.10_
+  - [x] 29.3 Configure logistics partner API integrations
+    - Set up API credentials for GIG, Kwik, Sendbox, Gokada, Redbox, Bolt
+    - _Requirements: 8.2_
+
+- [x] 30. Implement logistics tracking functionality
+  - [x] 30.1 Build LogisticsSelector component
+    - Display all partner options
+    - Show cost comparison
+    - _Requirements: 8.1, 8.10_
+  - [ ]\* 30.2 Write property test for logistics partner availability
+    - **Property 27: Logistics Partner Availability**
+    - **Validates: Requirements 8.2**
+  - [x] 30.3 Create TrackingDashboard component
+    - Display real-time tracking status
+    - Show estimated delivery time
+    - _Requirements: 8.3, 8.5_
+  - [ ]\* 30.4 Write property test for tracking status retrieval
+    - **Property 28: Tracking Status Retrieval**
+    - **Validates: Requirements 8.3**
+  - [x] 30.5 Build DeliveryTimeline component
+    - Visual delivery progress display
+    - _Requirements: 8.3_
+  - [x] 30.6 Implement delivery milestone notifications
+    - Send push notifications for pickup, in-transit, delivered
+    - _Requirements: 8.4_
+  - [ ]\* 30.7 Write property test for delivery milestone notifications
+    - **Property 29: Delivery Milestone Notifications**
+    - **Validates: Requirements 8.4**
+  - [x] 30.8 Add delivery person contact display
+    - Show contact info when out for delivery
+    - _Requirements: 8.6_
+  - [x] 30.9 Implement delivery failure notifications
+    - Notify both parties on delivery failure
+    - _Requirements: 8.8_
+  - [x] 30.10 Add separate delivery rating
+    - Allow buyers to rate delivery experience
+    - _Requirements: 8.7_
+
+- [x] 31. Create logistics API endpoints
+  - [x] 31.1 Implement GET /api/logistics/quotes endpoint
+    - Return shipping quotes from all partners
+    - _Requirements: 8.10_
+  - [x] 31.2 Implement POST /api/shipments endpoint
+    - Create shipment with selected partner
+    - _Requirements: 8.1_
+  - [x] 31.3 Implement GET /api/shipments/:id/track endpoint
+    - Return real-time tracking status
+    - _Requirements: 8.3_
+  - [x] 31.4 Implement POST /api/webhooks/logistics/:partner endpoint
+    - Handle partner webhook updates
+    - _Requirements: 8.3_
+
+- [x] 32. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+### Phase 5: Monetization (Weeks 13-15)
+
+- [x] 33. Set up monetization infrastructure
+  - [x] 33.1 Create boosts table
+    - Store package type, price, duration, views
+    - Track expiration timestamp
+    - _Requirements: 14.1, 14.3, 14.4, 14.6_
+  - [x] 33.2 Create subscriptions table
+    - Store plan, price, status, features
+    - Track free boosts remaining
+    - Store Paystack subscription code
+    - _Requirements: 16.1, 16.2, 16.3, 16.4, 16.5_
+  - [x] 33.3 Create referrals table
+    - Store referrer, referred user, referral code
+    - Track status and rewards
+    - _Requirements: 17.1, 17.2, 17.3, 17.4_
+
+- [x] 34. Implement premium listing boosts
+  - [x] 34.1 Create BoostService class
+    - Implement purchaseBoost method
+    - Integrate with Paystack for payment
+    - Create boost record with expiration
+    - _Requirements: 14.1, 14.9_
+  - [x] 34.2 Implement boosted listing ranking
+    - Place boosted listings at top of feeds and search
+    - _Requirements: 14.2_
+  - [ ]\* 34.3 Write property test for boosted listing ranking
+    - **Property 47: Boosted Listing Ranking**
+    - **Validates: Requirements 14.2**
+  - [x] 34.4 Add "Boosted" badge to listing cards
+    - Display badge on boosted listings
+    - _Requirements: 14.3_
+  - [x] 34.5 Implement boost expiration handling
+    - Return listing to normal ranking on expiration
+    - _Requirements: 14.6_
+  - [ ]\* 34.6 Write property test for boost expiration ranking
+    - **Property 48: Boost Expiration Ranking**
+    - **Validates: Requirements 14.6**
+  - [x] 34.7 Add boost expiration notifications
+    - Send notification 6 hours before expiration with extend option
+    - _Requirements: 14.10_
+  - [ ]\* 34.8 Write property test for boost expiration notification
+    - **Property 49: Boost Expiration Notification**
+    - **Validates: Requirements 14.10**
+  - [x] 34.9 Build boost performance analytics
+    - Track views gained during boost period
+    - _Requirements: 14.8_
+  - [x] 34.10 Create BoostPurchaseFlow component
+    - Display package options (₦500, ₦1000, ₦2000)
+    - Show estimated views for each package
+    - Handle payment flow
+    - _Requirements: 14.1, 14.4, 14.5_
+
+- [x] 35. Implement subscription plans
+  - [x] 35.1 Create SubscriptionService class
+    - Implement createSubscription method
+    - Integrate with Paystack subscriptions
+    - Handle plan upgrades/downgrades
+    - _Requirements: 16.7, 16.9_
+  - [x] 35.2 Build SubscriptionManager component
+    - Display plan options (Basic/Pro/Business)
+    - Show features for each tier
+    - Handle plan selection
+    - Use Magic UI for feature comparison cards
+    - Use Lucide Icons for feature indicators
+    - _Requirements: 16.1_
+  - [x] 35.3 Implement feature gating
+    - Unlimited listings for Pro and Business
+    - Advanced analytics for Pro and Business
+    - Priority support for Business
+    - Custom domain for Business
+    - _Requirements: 16.2, 16.3, 16.4, 16.6_
+  - [ ]\* 35.4 Write property test for subscription listing limits
+    - **Property 53: Subscription Listing Limits**
+    - **Validates: Requirements 16.2**
+  - [x] 35.5 Add free boosts for subscribers
+    - 2 free boosts/month for Pro
+    - 5 free boosts/month for Business
+    - _Requirements: 16.5_
+  - [x] 35.6 Implement subscription expiration handling
+    - Downgrade to Basic on expiration
+    - _Requirements: 16.8_
+  - [ ]\* 35.7 Write property test for subscription expiration downgrade
+    - **Property 54: Subscription Expiration Downgrade**
+    - **Validates: Requirements 16.8**
+  - [x] 35.8 Add 7-day free trial
+    - Provide trial for first-time Pro/Business subscribers
+    - _Requirements: 16.10_
+  - [ ]\* 35.9 Write property test for free trial period
+    - **Property 55: Free Trial Period**
+    - **Validates: Requirements 16.10**
+
+- [ ] 36. Implement referral system
+  - [ ] 36.1 Create ReferralService class
+    - Generate unique referral codes
+    - Track referral signups and purchases
+    - Distribute rewards
+    - _Requirements: 17.1, 17.2, 17.3, 17.4_
+  - [ ] 36.2 Implement referral code generation
+    - Generate unique code for each user
+    - _Requirements: 17.1_
+  - [ ] 36.3 Add referral signup rewards
+    - Credit ₦500 to referrer on signup
+    - Credit ₦200 to new user on signup
+    - _Requirements: 17.3, 17.4_
+  - [ ]\* 36.4 Write property test for referral signup reward
+    - **Property 56: Referral Signup Reward**
+    - **Validates: Requirements 17.3, 17.4**
+  - [ ] 36.5 Add referral purchase bonus
+    - Credit additional ₦500 to referrer on first purchase
+    - _Requirements: 17.4_
+  - [ ]\* 36.6 Write property test for referral purchase bonus
+    - **Property 57: Referral Purchase Bonus**
+    - **Validates: Requirements 17.4**
+  - [ ] 36.7 Implement monthly referral limit
+    - Cap rewards at 50 successful referrals per month
+    - _Requirements: 17.7_
+  - [ ]\* 36.8 Write property test for referral monthly limit
+    - **Property 58: Referral Monthly Limit**
+    - **Validates: Requirements 17.7**
+  - [ ] 36.9 Add duplicate account validation
+    - Validate referred users are unique
+    - _Requirements: 17.8_
+  - [ ] 36.10 Build ReferralTracker component
+    - Display referral code and share options
+    - Show referral statistics
+    - Display earned rewards
+    - Use Magic UI for stats cards
+    - Use Lucide Icons for social share buttons
+    - _Requirements: 17.1, 17.2, 17.6_
+  - [ ] 36.11 Create referral leaderboard
+    - Show top referrers with monthly prizes
+    - _Requirements: 17.10_
+
+- [x] 37. Create monetization API endpoints
+  - [x] 37.1 Implement POST /api/boosts endpoint
+    - Create boost and return Paystack payment URL
+    - _Requirements: 14.1_
+  - [x] 37.2 Implement GET /api/boosts/:listing_id endpoint
+    - Return active boost details and performance
+    - _Requirements: 14.8_
+  - [x] 37.3 Implement POST /api/subscriptions endpoint
+    - Create subscription and return Paystack URL
+    - _Requirements: 16.7_
+  - [x] 37.4 Implement PUT /api/subscriptions/:id endpoint
+    - Handle upgrade, downgrade, cancel actions
+    - _Requirements: 16.9_
+  - [x] 37.5 Implement POST /api/referrals/generate-code endpoint
+    - Generate and return unique referral code
+    - _Requirements: 17.1_
+  - [x] 37.6 Implement GET /api/referrals/stats endpoint
+    - Return referral statistics and earnings
+    - _Requirements: 17.6_
+
+- [x] 38. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+### Phase 6: Utility Features (Weeks 16-18)
+
+- [x] 39. Set up barter system infrastructure
+  - [x] 39.1 Create barter_proposals table
+    - Store listing_id, proposer, offered_listing
+    - Track status, value difference, cash adjustment
+    - _Requirements: 12.1, 12.4, 12.5, 12.9_
+  - [x] 39.2 Create barter_preferences table
+    - Store open_to_exchange flag
+    - Track preferred categories and value ranges
+    - _Requirements: 12.1, 12.8_
+
+- [x] 40. Implement barter and exchange system
+  - [x] 40.1 Create BarterService class
+    - Implement createProposal method
+    - Implement acceptProposal method
+    - Implement rejectProposal method
+    - Implement counterProposal method
+    - _Requirements: 12.3, 12.4, 12.5_
+  - [x] 40.2 Build BarterProposalForm component
+    - Allow selection of offered listing
+    - Calculate value difference
+    - Support cash adjustment input
+    - _Requirements: 12.3, 12.9, 12.10_
+  - [x] 40.3 Implement barter proposal notifications
+    - Notify listing owner with proposed item details
+    - _Requirements: 12.4_
+  - [ ]\* 40.4 Write property test for barter proposal notification
+    - **Property 40: Barter Proposal Notification**
+    - **Validates: Requirements 12.4**
+  - [x] 40.5 Add exchange transaction creation
+    - Create transaction record when both parties accept
+    - _Requirements: 12.6_
+  - [ ]\* 40.6 Write property test for barter transaction creation
+    - **Property 41: Barter Transaction Creation**
+    - **Validates: Requirements 12.6**
+  - [x] 40.7 Build BarterNegotiationThread component
+    - Dedicated messaging for exchange negotiation
+    - _Requirements: 12.7_
+  - [x] 40.8 Implement value difference calculation
+    - Calculate and display estimated value difference
+    - _Requirements: 12.9_
+  - [ ]\* 40.9 Write property test for barter value difference calculation
+    - **Property 42: Barter Value Difference Calculation**
+    - **Validates: Requirements 12.9**
+  - [x] 40.10 Add exchange badge to listings
+    - Display "Open to Exchange" badge
+    - _Requirements: 12.1, 12.2_
+  - [x] 40.11 Create ValueCalculator component
+    - Show estimated value comparison
+    - _Requirements: 12.9_
+
+- [x] 41. Set up smart alerts infrastructure
+  - [x] 41.1 Create saved_searches table
+    - Store name, filters, notification frequency
+    - Track new matches count and last checked
+    - _Requirements: 13.1, 13.2, 13.6, 13.8_
+  - [x] 41.2 Create search_alerts table
+    - Link to saved_search_id and listing_id
+    - Track alert type (new_listing/price_drop)
+    - _Requirements: 13.1, 13.4_
+
+- [x] 42. Implement smart alerts and saved searches
+  - [x] 42.1 Create AlertService class
+    - Implement createSavedSearch method
+    - Implement checkForMatches method
+    - Implement sendAlert method
+    - _Requirements: 13.1, 13.3, 13.4_
+  - [x] 42.2 Build SavedSearchManager component
+    - Allow creation and naming of saved searches
+    - Display all saved searches
+    - Show new matches count
+    - Use Aceternity UI for animated toggle switches
+    - Use Lucide Icons for search indicators
+    - _Requirements: 13.1, 13.2, 13.6_
+  - [x] 42.3 Implement new listing alerts
+    - Send push notification within 5 minutes of match
+    - _Requirements: 13.3_
+  - [ ]\* 42.4 Write property test for smart alert timing
+    - **Property 43: Smart Alert Timing**
+    - **Validates: Requirements 13.3**
+  - [x] 42.5 Add price drop alerts
+    - Send notification when price drops by 10% or more
+    - _Requirements: 13.4_
+  - [ ]\* 42.6 Write property test for price drop alert threshold
+    - **Property 44: Price Drop Alert Threshold**
+    - **Validates: Requirements 13.4**
+  - [x] 42.7 Implement notification frequency preferences
+    - Support instant, daily digest, weekly digest
+    - _Requirements: 13.5_
+  - [x] 42.8 Add pause/resume functionality
+    - Allow users to pause and resume saved searches
+    - _Requirements: 13.7_
+  - [x] 42.9 Implement auto-disable after 90 days
+    - Automatically disable inactive saved searches
+    - _Requirements: 13.8_
+  - [ ]\* 42.10 Write property test for saved search auto-disable
+    - **Property 46: Saved Search Auto-Disable**
+    - **Validates: Requirements 13.8**
+  - [x] 42.11 Add saved search tier limits
+    - Limit free users to 3 saved searches
+    - Allow unlimited for premium users
+    - _Requirements: 13.9_
+  - [ ]\* 42.12 Write property test for saved search tier limits
+    - **Property 45: Saved Search Tier Limits**
+    - **Validates: Requirements 13.9**
+  - [x] 42.13 Create match feed view
+    - Display all new matches across saved searches
+    - _Requirements: 13.10_
+
+- [x] 43. Set up product request infrastructure
+  - [x] 43.1 Create product_requests table
+    - Store title, description, category, budget range
+    - Track status and offers count
+    - _Requirements: 19.1, 19.6, 19.8_
+  - [x] 43.2 Create request_offers table
+    - Link to request_id, seller_id, listing_id
+    - Store price, message, status
+    - _Requirements: 19.3, 19.5_
+
+- [x] 44. Implement product request feature
+  - [x] 44.1 Create ProductRequestService class
+    - Implement createRequest method
+    - Implement submitOffer method
+    - Implement acceptOffer method
+    - _Requirements: 19.1, 19.3, 19.5_
+  - [x] 44.2 Build ProductRequestForm component
+    - Capture title, description, budget, category
+    - Set preferred location
+    - _Requirements: 19.1, 19.9_
+  - [ ]\* 44.3 Write property test for product request creation
+    - **Property 62: Product Request Creation**
+    - **Validates: Requirements 19.1**
+  - [x] 44.4 Create requests feed for sellers
+    - Display all active requests
+    - _Requirements: 19.2_
+  - [x] 44.5 Implement offer submission
+    - Allow sellers to submit offers with listing
+    - _Requirements: 19.3_
+  - [ ]\* 44.6 Write property test for request offer submission
+    - **Property 63: Request Offer Submission**
+    - **Validates: Requirements 19.3**
+  - [x] 44.7 Add offer notifications
+    - Notify requester when sellers submit offers
+    - _Requirements: 19.4_
+  - [x] 44.8 Build OfferComparison component
+    - Display offers side-by-side
+    - _Requirements: 19.5_
+  - [x] 44.9 Implement request auto-expiration
+    - Expire requests after 30 days
+    - _Requirements: 19.6_
+  - [ ]\* 44.10 Write property test for request auto-expiration
+    - **Property 64: Request Auto-Expiration**
+    - **Validates: Requirements 19.6**
+  - [x] 44.11 Add request fulfillment marking
+    - Allow requesters to mark as fulfilled
+    - _Requirements: 19.7_
+  - [x] 44.12 Display request status
+    - Show active, fulfilled, or expired status
+    - _Requirements: 19.8_
+  - [x] 44.13 Show offers count on request cards
+    - Display number of offers received
+    - _Requirements: 19.10_
+
+- [x] 45. Create utility features API endpoints
+  - [x] 45.1 Implement POST /api/barter/proposals endpoint
+    - Create barter proposal
+    - _Requirements: 12.3_
+  - [x] 45.2 Implement PUT /api/barter/proposals/:id endpoint
+    - Update proposal status (accept/reject/counter)
+    - _Requirements: 12.5_
+  - [x] 45.3 Implement GET /api/barter/proposals endpoint
+    - Return paginated barter proposals
+    - _Requirements: 12.4_
+  - [x] 45.4 Implement POST /api/saved-searches endpoint
+    - Create saved search
+    - _Requirements: 13.1_
+  - [x] 45.5 Implement GET /api/saved-searches endpoint
+    - Return all saved searches with match counts
+    - _Requirements: 13.2_
+  - [x] 45.6 Implement GET /api/saved-searches/:id/matches endpoint
+    - Return new matching listings
+    - _Requirements: 13.10_
+  - [x] 45.7 Implement DELETE /api/saved-searches/:id endpoint
+    - Delete saved search
+    - _Requirements: 13.2_
+  - [x] 45.8 Implement POST /api/product-requests endpoint
+    - Create product request
+    - _Requirements: 19.1_
+  - [x] 45.9 Implement GET /api/product-requests endpoint
+    - Return paginated product requests
+    - _Requirements: 19.2_
+  - [x] 45.10 Implement POST /api/product-requests/:id/offers endpoint
+    - Submit offer for request
+    - _Requirements: 19.3_
+  - [x] 45.11 Implement GET /api/product-requests/:id/offers endpoint
+    - Return all offers for request
+    - _Requirements: 19.5_
+  - [x] 45.12 Implement PUT /api/product-requests/:id/offers/:offer_id endpoint
+    - Accept or reject offer
+    - _Requirements: 19.5_
+
+- [x] 46. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+### Phase 7: Buyer Experience (Weeks 19-21)
+
+- [x] 47. Set up buyer tools infrastructure
+  - [x] 47.1 Create purchase_records table
+    - Store buyer, seller, listing, amount
+    - Track delivery status and warranty
+    - _Requirements: 20.1, 20.2, 20.8_
+  - [x] 47.2 Create meetups table
+    - Store transaction, location details, coordinates
+    - Track check-in status for both parties
+    - _Requirements: 21.1, 21.2, 21.5, 21.10_
+
+- [x] 48. Implement purchase history and reorder
+  - [x] 48.1 Create PurchaseHistoryService class
+    - Implement getPurchaseHistory method
+    - Implement reorderItem method
+    - _Requirements: 20.1, 20.5_
+  - [x] 48.2 Build PurchaseHistoryView component
+    - Display transactions in reverse chronological order
+    - Show order details (item, price, seller, date, status)
+    - Use Aceternity UI for timeline animations
+    - Use Lucide Icons for status indicators
+    - _Requirements: 20.1, 20.2_
+  - [x]\* 48.3 Write property test for purchase history sort order
+    - **Property 65: Purchase History Sort Order**
+    - **Validates: Requirements 20.1**
+  - [x] 48.4 Add filtering functionality
+    - Filter by date range, category, price range
+    - _Requirements: 20.3_
+  - [x] 48.5 Implement spending analytics
+    - Calculate total spending by month and year
+    - _Requirements: 20.4_
+  - [x] 48.6 Add one-click reorder button
+    - Check item availability from same seller
+    - _Requirements: 20.5, 20.6_
+  - [x]\* 48.7 Write property test for reorder availability check
+    - **Property 66: Reorder Availability Check**
+    - **Validates: Requirements 20.6**
+  - [x] 48.8 Implement reorder fallback suggestions
+    - Suggest similar items if original unavailable
+    - _Requirements: 20.7_
+  - [x]\* 48.9 Write property test for reorder fallback suggestions
+    - **Property 67: Reorder Fallback Suggestions**
+    - **Validates: Requirements 20.7**
+  - [x] 48.10 Add receipt download functionality
+    - Generate and download receipts
+    - _Requirements: 20.8_
+  - [x] 48.11 Display warranty information
+    - Show warranty expiry dates where applicable
+    - _Requirements: 20.9_
+  - [x] 48.12 Add review from history
+    - Allow leaving reviews directly from purchase history
+    - _Requirements: 20.10_
+
+- [x] 49. Implement safe meetup coordination
+  - [x] 49.1 Create MeetupService class
+    - Implement scheduleMeetup method
+    - Implement checkIn method
+    - Implement getSafeLocations method
+    - _Requirements: 21.1, 21.2, 21.5_
+  - [x] 49.2 Build MeetupCoordinator component
+    - Display safe location suggestions on map
+    - Show distance from both parties
+    - Use Lucide Icons for location markers
+    - Use Aceternity UI for location cards
+    - _Requirements: 21.1, 21.2_
+  - [x]\* 49.3 Write property test for safe meetup location suggestions
+    - **Property 68: Safe Meetup Location Suggestions**
+    - **Validates: Requirements 21.1**
+  - [x] 49.4 Implement meetup scheduling
+    - Send location and time to both parties
+    - _Requirements: 21.3_
+  - [x]\* 49.5 Write property test for meetup notification
+    - **Property 69: Meetup Notification**
+    - **Validates: Requirements 21.3**
+  - [x] 49.6 Add live location sharing
+    - Allow sharing location with trusted contact
+    - _Requirements: 21.4_
+  - [x] 49.7 Implement check-in feature
+    - Allow both parties to confirm arrival
+    - _Requirements: 21.5_
+  - [x] 49.8 Add meetup reminders
+    - Send notifications 1 hour and 15 minutes before
+    - _Requirements: 21.6_
+  - [x] 49.9 Implement reschedule and cancel
+    - Allow rescheduling or canceling with notifications
+    - _Requirements: 21.7_
+  - [x] 49.10 Display safety tips
+    - Show safety guidelines before meetup
+    - _Requirements: 21.8_
+  - [x] 49.11 Add unsafe experience reporting
+    - Allow reporting of unsafe meetup experiences
+    - _Requirements: 21.9_
+  - [x] 49.12 Implement transaction completion prompt
+    - Prompt for confirmation when both parties check in
+    - _Requirements: 21.10_
+  - [x]\* 49.13 Write property test for meetup completion prompt
+    - **Property 70: Meetup Completion Prompt**
+    - **Validates: Requirements 21.10**
+
+- [x] 50. Set up buying guides and Q&A infrastructure
+  - [x] 50.1 Create buying_guides table
+    - Store category, title, content, checklist
+    - Include price ranges and video URL
+    - _Requirements: 22.1, 22.2, 22.5_
+  - [x] 50.2 Create product_questions table
+    - Link to listing and asker
+    - Store question, answer, upvotes
+    - _Requirements: 23.1, 23.2, 23.7_
+
+- [x] 51. Implement buying guides
+  - [x] 51.1 Create comprehensive guides for major categories
+    - Write guides for phones, laptops, fashion, vehicles
+    - Include key features, common scams, price ranges
+    - _Requirements: 22.1, 22.2_
+  - [x]\* 51.2 Write property test for buying guide availability
+    - **Property 71: Buying Guide Availability**
+    - **Validates: Requirements 22.1**
+  - [x]\* 51.3 Write property test for buying guide content completeness
+    - **Property 72: Buying Guide Content Completeness**
+    - **Validates: Requirements 22.2**
+  - [x] 51.4 Build BuyingGuideViewer component
+    - Display guide content
+    - Show checklists and price ranges
+    - Use Aceternity UI for collapsible sections
+    - Use Lucide Icons for visual indicators
+    - _Requirements: 22.2, 22.4_
+  - [x] 51.5 Add guide display in category browsing
+    - Show relevant guides when browsing categories
+    - _Requirements: 22.3_
+  - [x] 51.6 Include inspection checklists
+    - Provide checklists for meetup inspections
+    - _Requirements: 22.4_
+  - [x] 51.7 Add comparison charts
+    - Include charts for popular models and brands
+    - _Requirements: 22.5_
+  - [x] 51.8 Add video tutorials
+    - Include video tutorials for complex categories
+    - _Requirements: 22.6_
+  - [x] 51.9 Implement guide search
+    - Make guides searchable by keywords
+    - _Requirements: 22.7_
+  - [x] 51.10 Add bookmark functionality
+    - Allow users to bookmark guides
+    - _Requirements: 22.8_
+  - [x] 51.11 Display market price estimates
+    - Show estimated prices for common items
+    - _Requirements: 22.9_
+
+- [x] 52. Implement product Q&A system
+  - [x] 52.1 Create ProductQAService class
+    - Implement postQuestion method
+    - Implement postAnswer method
+    - Implement upvoteQuestion method
+    - _Requirements: 23.1, 23.4, 23.7_
+  - [x] 52.2 Build ProductQASection component
+    - Display questions section on listing pages
+    - Show questions sorted by upvotes and recency
+    - _Requirements: 23.1, 23.8_
+  - [x] 52.3 Implement question posting
+    - Allow any user to post questions
+    - _Requirements: 23.2_
+  - [x] 52.4 Add seller notifications
+    - Notify seller immediately when question posted
+    - _Requirements: 23.3_
+  - [x]\* 52.5 Write property test for question notification
+    - **Property 73: Question Notification**
+    - **Validates: Requirements 23.3**
+  - [x] 52.6 Implement answer posting
+    - Allow seller to post answers
+    - Display "Seller" badge on answers
+    - _Requirements: 23.4, 23.6_
+  - [x]\* 52.7 Write property test for answer public visibility
+    - **Property 74: Answer Public Visibility**
+    - **Validates: Requirements 23.4**
+  - [x] 52.8 Add buyer answer capability
+    - Allow buyers who purchased to answer questions
+    - _Requirements: 23.5_
+  - [x] 52.9 Implement upvoting system
+    - Allow upvoting helpful questions and answers
+    - _Requirements: 23.7_
+  - [x] 52.10 Add question limit per user
+    - Limit to 5 questions per listing per user
+    - _Requirements: 23.9_
+  - [x]\* 52.11 Write property test for question limit per user
+    - **Property 75: Question Limit Per User**
+    - **Validates: Requirements 23.9**
+  - [x] 52.12 Display answer rate on profiles
+    - Show seller answer rate percentage
+    - _Requirements: 23.10_
+
+- [x] 53. Create buyer tools API endpoints
+  - [x] 53.1 Implement GET /api/purchase-history endpoint
+    - Return paginated purchase records
+    - Support filtering by date range and category
+    - _Requirements: 20.1_
+  - [x] 53.2 Implement POST /api/purchase-history/:id/reorder endpoint
+    - Check availability and return result or suggestions
+    - _Requirements: 20.5_
+  - [x] 53.3 Implement POST /api/meetups endpoint
+    - Create meetup with location and time
+    - _Requirements: 21.3_
+  - [x] 53.4 Implement POST /api/meetups/:id/check-in endpoint
+    - Update check-in status
+    - _Requirements: 21.5_
+  - [x] 53.5 Implement GET /api/meetups/safe-locations endpoint
+    - Return suggested safe meetup locations
+    - _Requirements: 21.1_
+  - [x] 53.6 Implement GET /api/buying-guides endpoint
+    - Return guides for specified category
+    - _Requirements: 22.1_
+  - [x] 53.7 Implement POST /api/product-questions endpoint
+    - Create question for listing
+    - _Requirements: 23.2_
+  - [x] 53.8 Implement POST /api/product-questions/:id/answer endpoint
+    - Post answer to question
+    - _Requirements: 23.4_
+  - [x] 53.9 Implement POST /api/product-questions/:id/upvote endpoint
+    - Upvote question or answer
+    - _Requirements: 23.7_
+
+- [x] 54. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+### Phase 8: Social and Viral (Weeks 22-24)
+
+- [x] 55. Set up social sharing infrastructure
+  - [x] 55.1 Create share_metrics table
+    - Track shares by platform
+    - Count views and conversions from shares
+    - _Requirements: 25.4, 25.9_
+  - [x] 55.2 Create achievements table
+    - Store badge type, name, icon
+    - Track earned date and display status
+    - _Requirements: 26.1, 26.9_
+  - [x] 55.3 Create user_levels table
+    - Track level, points, streak days
+    - Store unlocked perks
+    - _Requirements: 26.2, 26.3, 26.6, 26.7_
+
+- [x] 56. Implement social sharing features
+  - [x] 56.1 Create SocialShareService class
+    - Generate share links with tracking
+    - Track share metrics
+    - _Requirements: 25.2, 25.4_
+  - [x] 56.2 Generate Open Graph meta tags
+    - Include image, title, price, description
+    - _Requirements: 25.1_
+  - [x]\* 56.3 Write property test for Open Graph meta tags
+    - **Property 79: Open Graph Meta Tags**
+    - **Validates: Requirements 25.1**
+  - [x] 56.4 Build SocialShareButtons component
+    - Add one-click sharing for WhatsApp, Twitter, Facebook, Instagram
+    - Use Lucide Icons for social media icons
+    - Use Aceternity UI for animated share buttons
+    - _Requirements: 25.2_
+  - [x] 56.5 Include referral code in share links
+    - Embed seller's referral code in shared links
+    - _Requirements: 25.3_
+  - [x]\* 56.6 Write property test for share link referral tracking
+    - **Property 80: Share Link Referral Tracking**
+    - \*\*Validates: Requirements 25.3\_
+  - [x] 56.7 Track share conversions
+    - Track views and conversions from social shares
+    - _Requirements: 25.4_
+  - [x]\* 56.8 Write property test for share metrics tracking
+    - **Property 81: Share Metrics Tracking**
+    - **Validates: Requirements 25.4**
+  - [x] 56.9 Generate story-format images
+    - Create shareable images for Instagram/WhatsApp status
+    - _Requirements: 25.5_
+  - [x] 56.10 Create promotional graphics
+    - Generate graphics with listing details and QR codes
+    - _Requirements: 25.6_
+  - [x] 56.11 Add trending hashtags
+    - Provide share templates with Nigerian market hashtags
+    - _Requirements: 25.7_
+  - [x] 56.12 Display share count
+    - Show social proof of how many times listing shared
+    - _Requirements: 25.9_
+  - [x] 56.13 Create weekly highlights
+    - Generate shareable highlights for best-performing listings
+    - _Requirements: 25.10_
+
+- [x] 57. Implement gamification system
+  - [x] 57.1 Create GamificationService class
+    - Implement awardBadge method
+    - Implement addPoints method
+    - Implement checkLevelUp method
+    - _Requirements: 26.1, 26.2, 26.6_
+  - [x] 57.2 Award achievement badges
+    - Award badges for first listing, first sale, 10 sales
+    - Trigger party.js confetti effects on badge unlock
+    - Use particles.js for special milestone achievements
+    - _Requirements: 26.1_
+  - [x]\* 57.3 Write property test for achievement badge award
+    - **Property 82: Achievement Badge Award**
+    - **Validates: Requirements 26.1**
+  - [x] 57.4 Implement points system
+    - Award points for posting, selling, reviewing, referring
+    - _Requirements: 26.2_
+  - [x] 57.5 Build GamificationDashboard component
+    - Display user level and progress bar with Magic UI components
+    - Show earned badges and points
+    - Use Aceternity UI for animated progress indicators
+    - Use Lucide Icons for consistent iconography
+    - _Requirements: 26.3_
+  - [x] 57.6 Add monthly challenges
+    - Create challenges with bonus rewards
+    - _Requirements: 26.4_
+  - [x] 57.7 Create leaderboards
+    - Show top sellers, buyers, community contributors
+    - Use Magic UI for leaderboard cards
+    - Use Lucide Icons for ranking indicators
+    - _Requirements: 26.5_
+  - [x] 57.8 Implement level-up perks
+    - Unlock free boosts or reduced fees on level up
+    - _Requirements: 26.6_
+  - [x]\* 57.9 Write property test for level-up perk unlock
+    - **Property 83: Level-Up Perk Unlock**
+    - **Validates: Requirements 26.6**
+  - [x] 57.10 Add streak badges
+    - Award badges for consecutive days of activity
+    - _Requirements: 26.7_
+  - [x] 57.11 Create special event badges
+    - Provide collectible badges for events and promotions
+    - _Requirements: 26.8_
+  - [x] 57.12 Add badge display selection
+    - Allow users to choose favorite badges for profile
+    - Use Magic UI for badge grid display
+    - Use Lucide Icons for badge categories
+    - _Requirements: 26.9_
+  - [x] 57.13 Implement congratulatory notifications
+    - Send notifications with confetti animations using party.js for new badges
+    - Add particle effects with particles.js for special achievements
+    - Use Lucide Icons for badge icons
+    - _Requirements: 26.10_
+
+- [x] 58. Create social and gamification API endpoints
+  - [x] 58.1 Implement POST /api/share endpoint
+    - Track share and return share URL
+    - _Requirements: 25.2_
+  - [x] 58.2 Implement GET /api/achievements endpoint
+    - Return user achievements and progress
+    - _Requirements: 26.1_
+  - [x] 58.3 Implement GET /api/leaderboard endpoint
+    - Return top users by category (sellers/buyers/referrers)
+    - _Requirements: 26.5_
+
+- [x] 59. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+### Phase 9: Advanced Features (Weeks 25-27)
+
+- [x] 60. Set up advanced features infrastructure
+  - [x] 60.1 Create pricing_suggestions table
+    - Store suggested price, confidence, price range
+    - Track market average and similar items count
+    - _Requirements: 27.1, 27.2, 27.3_
+
+- [x] 61. Implement smart pricing suggestions
+  - [x] 61.1 Create PricingSuggestionService class
+    - Analyze similar sold items
+    - Calculate optimal price range
+    - Generate pricing suggestions
+    - _Requirements: 27.1, 27.2_
+  - [x] 61.2 Build SmartPricingSuggester component
+    - Display suggested price range on listing creation
+    - Show confidence level
+    - Use Magic UI for price range slider
+    - Use Lucide Icons for pricing indicators
+    - _Requirements: 27.1, 27.3_
+  - [x]\* 61.3 Write property test for smart pricing suggestion
+    - **Property 87: Smart Pricing Suggestion**
+    - **Validates: Requirements 27.1**
+  - [x] 61.4 Consider multiple factors
+    - Factor in condition, age, brand, location
+    - _Requirements: 27.2_
+  - [x] 61.5 Display average selling time
+    - Show average time to sell at different price points
+    - _Requirements: 27.4_
+  - [x] 61.6 Add price deviation alerts
+    - Alert when price significantly above/below market
+    - _Requirements: 27.5_
+  - [x] 61.7 Implement dynamic recommendations
+    - Update suggestions based on listing performance
+    - _Requirements: 27.6_
+  - [x] 61.8 Add price reduction suggestions
+    - Suggest price reduction after 48 hours with no views
+    - _Requirements: 27.7_
+  - [x]\* 61.9 Write property test for dynamic price reduction suggestion
+    - **Property 88: Dynamic Price Reduction Suggestion**
+    - **Validates: Requirements 27.7**
+  - [x] 61.10 Analyze seasonal trends
+    - Suggest optimal pricing for different times of year
+    - _Requirements: 27.8_
+  - [x] 61.11 Display price history charts
+    - Show price trends for similar items over 6 months
+    - _Requirements: 27.9_
+  - [x] 61.12 Add one-click price acceptance
+    - Allow accepting suggested price with one click
+    - _Requirements: 27.10_
+
+- [x] 62. Create advanced features API endpoints
+  - [x] 62.1 Implement GET /api/pricing-suggestions/:listing_id endpoint
+    - Return AI-powered pricing suggestion
+    - _Requirements: 27.1_
+
+- [x] 63. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+### Phase 10: Unique Features (Weeks 28-30)
+
+- [x] 64. Set up Skill Swap infrastructure
+  - [x] 64.1 Create skill_offers table
+    - Store title, description, category, skill tags
+    - Track exchange preferences and hourly rate
+    - _Requirements: Skill Swap_
+  - [x] 64.2 Create skill_exchanges table
+    - Link requester and provider skills
+    - Track hours exchanged and status
+    - _Requirements: Skill Swap_
+
+- [x] 65. Implement Skill Swap feature
+  - [x] 65.1 Create SkillSwapService class
+    - Implement createSkillOffer method
+    - Implement proposeExchange method
+    - Implement acceptExchange method
+    - _Requirements: Skill Swap_
+  - [x] 65.2 Build SkillSwapBoard component
+    - Display all skill offers
+    - Show skill categories and tags
+    - _Requirements: Skill Swap_
+  - [x] 65.3 Add skill offer creation form
+    - Capture title, description, category, tags
+    - Set exchange preferences
+    - _Requirements: Skill Swap_
+  - [x] 65.4 Implement exchange matching
+    - Match complementary skills
+    - _Requirements: Skill Swap_
+  - [x] 65.5 Add portfolio integration
+    - Link portfolio items to skill offers
+    - _Requirements: Skill Swap_
+  - [x] 65.6 Track exchange hours
+    - Monitor hours exchanged between users
+    - _Requirements: Skill Swap_
+
+- [x] 66. Set up Trending Sounds infrastructure
+  - [x] 66.1 Create trending_sounds table
+    - Store audio URL, title, artist
+    - Track usage count and trending score
+    - _Requirements: Trending Sounds_
+
+- [x] 67. Implement Trending Sounds feature
+  - [x] 67.1 Build TrendingSoundsLibrary component
+    - Display audio clips browser
+    - Show usage count and trending score
+    - _Requirements: Trending Sounds_
+  - [x] 67.2 Create TrendingSoundsSelector component
+    - Allow audio clip selection for video listings
+    - _Requirements: Trending Sounds_
+  - [x] 67.3 Add audio upload functionality
+    - Allow uploading custom audio clips
+    - _Requirements: Trending Sounds_
+  - [x] 67.4 Implement trending score calculation
+    - Calculate trending score based on usage
+    - _Requirements: Trending Sounds_
+  - [x] 67.5 Link audio to video listings
+    - Associate trending sounds with video listings
+    - _Requirements: Trending Sounds_
+
+- [x] 68. Set up Price Drop Battle infrastructure
+  - [x] 68.1 Create price_drop_battles table
+    - Store listing, buyer, seller, prices
+    - Track rounds and status
+    - _Requirements: Price Drop Battle_
+
+- [x] 69. Implement Price Drop Battle feature
+  - [x] 69.1 Create PriceDropBattleService class
+    - Implement startBattle method
+    - Implement makeCounterOffer method
+    - Implement acceptOffer method
+    - _Requirements: Price Drop Battle_
+  - [x] 69.2 Build PriceDropBattleGame component
+    - Display gamified negotiation interface
+    - Show round-based offers
+    - Add animations and timers
+    - _Requirements: Price Drop Battle_
+  - [x] 69.3 Implement time limits for rounds
+    - Add countdown timers for offers
+    - _Requirements: Price Drop Battle_
+  - [x] 69.4 Add visual animations
+    - Create engaging animations for offers using Aceternity UI
+    - Add celebration effects with party.js on successful negotiations
+    - Use Lucide Icons for action buttons
+    - _Requirements: Price Drop Battle_
+  - [x] 69.5 Track battle outcomes
+    - Record accepted, rejected, expired battles
+    - _Requirements: Price Drop Battle_
+  - [x] 69.6 Display battle history
+    - Show past negotiations for users
+    - _Requirements: Price Drop Battle_
+
+- [x] 70. Create unique features API endpoints
+  - [x] 70.1 Implement POST /api/skill-offers endpoint
+    - Create skill offer
+    - _Requirements: Skill Swap_
+  - [x] 70.2 Implement POST /api/skill-exchanges endpoint
+    - Propose skill exchange
+    - _Requirements: Skill Swap_
+  - [x] 70.3 Implement GET /api/trending-sounds endpoint
+    - Return trending audio clips
+    - _Requirements: Trending Sounds_
+  - [x] 70.4 Implement POST /api/trending-sounds endpoint
+    - Upload new audio clip
+    - _Requirements: Trending Sounds_
+  - [x] 70.5 Implement POST /api/price-drop-battles endpoint
+    - Start price drop battle
+    - _Requirements: Price Drop Battle_
+  - [x] 70.6 Implement POST /api/price-drop-battles/:id/counter endpoint
+    - Make counter offer in battle
+    - _Requirements: Price Drop Battle_
+
+- [x] 71. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+### Phase 11: PWA and Accessibility (Weeks 31-32)
+
+- [x] 72. Set up PWA infrastructure
+  - [x] 72.1 Create pwa_settings table
+    - Store low_data_mode, offline_cache_enabled flags
+    - Track data usage and last sync
+    - _Requirements: 18.1, 18.4, 18.6_
+  - [x] 72.2 Create offline_actions table
+    - Queue actions performed offline
+    - Track sync status
+    - _Requirements: 18.5, 18.9_
+
+- [x] 73. Implement low-data mode PWA
+  - [x] 73.1 Create PWAService class
+    - Implement toggleLowDataMode method
+    - Implement syncOfflineActions method
+    - _Requirements: 18.1, 18.9_
+  - [x] 73.2 Build LowDataModeToggle component
+    - Add data saving mode switch in settings
+    - _Requirements: 18.1_
+  - [x] 73.3 Implement image compression
+    - Compress images to 50% quality in low-data mode
+    - Reduce resolution
+    - _Requirements: 18.2_
+  - [x]\* 73.4 Write property test for low-data image compression
+    - **Property 59: Low-Data Image Compression**
+    - **Validates: Requirements 18.2**
+  - [x] 73.5 Disable video auto-play in low-data mode
+    - Load only thumbnails, no auto-play
+    - _Requirements: 18.3_
+  - [x]\* 73.6 Write property test for low-data video behavior
+    - **Property 60: Low-Data Video Behavior**
+    - **Validates: Requirements 18.3**
+
+- [x] 74. Implement offline capabilities
+  - [x] 74.1 Set up service worker
+    - Configure Next.js PWA
+    - Cache essential assets
+    - _Requirements: 18.7_
+  - [x] 74.2 Cache recently viewed listings
+    - Store listings for offline access
+    - _Requirements: 18.4_
+  - [x] 74.3 Allow offline listing creation
+    - Queue listings created offline
+    - _Requirements: 18.5_
+  - [x] 74.4 Build OfflineIndicator component
+    - Show network status indicator
+    - _Requirements: 18.8_
+  - [x] 74.5 Create SyncQueue component
+    - Display queued offline actions
+    - _Requirements: 18.9_
+  - [x] 74.6 Implement automatic sync
+    - Sync queued actions when online
+    - _Requirements: 18.9_
+  - [x]\* 74.7 Write property test for offline action queue
+    - **Property 61: Offline Action Queue**
+    - **Validates: Requirements 18.9**
+  - [ ] 74.8 Build DataUsageTracker component
+    - Display MB consumed per session
+    - Show estimated data savings
+    - _Requirements: 18.6, 18.10_
+
+- [x] 75. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+### Phase 12: Polish and Optimization (Weeks 33-36)
+
+- [x] 76. Performance optimization
+  - [x] 76.1 Implement caching strategies
+    - Add Redis caching for frequently accessed data
+    - Cache API responses
+    - _Requirements: Performance_
+  - [x] 76.2 Optimize database queries
+    - Add missing indexes
+    - Optimize N+1 queries
+    - Use query batching
+    - _Requirements: Performance_
+  - [x] 76.3 Set up CDN for static assets
+    - Configure CDN for images and videos
+    - _Requirements: Performance_
+  - [x] 76.4 Implement lazy loading
+    - Lazy load images and components
+    - Use Next.js dynamic imports
+    - _Requirements: Performance_
+  - [x] 76.5 Optimize bundle sizes
+    - Code splitting
+    - Tree shaking
+    - Remove unused dependencies
+    - _Requirements: Performance_
+  - [x] 76.6 Add performance monitoring
+    - Set up performance tracking
+    - Monitor Core Web Vitals
+    - _Requirements: Performance_
+
+- [x] 77. Testing and quality assurance
+  - [x]\* 77.1 Write unit tests for critical paths
+    - Test escrow flow
+    - Test wallet operations
+    - Test moderation logic
+    - _Requirements: Testing_
+  - [x]\* 77.2 Write integration tests for API endpoints
+    - Test all API routes
+    - Test authentication and authorization
+    - _Requirements: Testing_
+  - [x]\* 77.3 Conduct user acceptance testing
+    - Test with real users
+    - Gather feedback
+    - _Requirements: Testing_
+  - [x]\* 77.4 Perform load testing
+    - Test system under high load
+    - Identify bottlenecks
+    - _Requirements: Testing_
+  - [x]\* 77.5 Fix bugs and edge cases
+    - Address issues found in testing
+    - Handle edge cases
+    - _Requirements: Testing_
+
+- [x] 78. Documentation and deployment
+  - [x] 78.1 Write API documentation
+    - Document all endpoints
+    - Include request/response examples
+    - _Requirements: Documentation_
+  - [x] 78.2 Create user guides
+    - Write guides for buyers and sellers
+    - Create video tutorials
+    - _Requirements: Documentation_
+  - [x] 78.3 Document admin processes
+    - Write moderation guidelines
+    - Document fraud detection procedures
+    - _Requirements: Documentation_
+  - [x] 78.4 Write deployment guides
+    - Document deployment process
+    - Include environment setup
+    - _Requirements: Documentation_
+  - [x] 78.5 Create troubleshooting documentation
+    - Document common issues and solutions
+    - _Requirements: Documentation_
+
+- [x] 79. Final checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+## Notes
+
+- Tasks marked with `*` are optional and can be skipped for faster MVP
+- Each task references specific requirements for traceability
+- Checkpoints ensure incremental validation at the end of each phase
+- Property tests validate universal correctness properties from the design document
+- Unit tests validate specific examples and edge cases
+- All implementation uses TypeScript with Next.js 14, React, and Supabase

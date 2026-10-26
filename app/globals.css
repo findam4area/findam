@@ -1,0 +1,348 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 142 76% 36%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    /* Updated border for 3:1 contrast ratio (WCAG AA UI component requirement) */
+    /* Increased from 17.5% to 40% to achieve 3:1 contrast on dark background */
+    --border: 217.2 32.6% 40%;
+    --input: 217.2 32.6% 40%;
+    --ring: 142 76% 36%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+  }
+}
+
+/* Glassmorphism utility classes */
+@layer utilities {
+  .glass {
+    @apply bg-white/10 backdrop-blur-md border border-white/20;
+  }
+
+  .glass-dark {
+    @apply bg-black/20 backdrop-blur-md border border-white/10;
+  }
+
+  .glass-card {
+    background: rgba(26, 26, 46, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
+  .neon-glow {
+    box-shadow:
+      0 0 10px currentColor,
+      0 0 20px currentColor,
+      0 0 30px currentColor;
+  }
+
+  .neon-text {
+    text-shadow:
+      0 0 10px currentColor,
+      0 0 20px currentColor;
+  }
+
+  /* Gradient animations */
+  @keyframes gradient-shift {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+  }
+
+  /* Floating animation */
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Pulse glow */
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(0, 255, 136, 0.6);
+    }
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+}
+
+/* Accessibility: Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Accessibility: Screen reader only, visible on focus */
+.sr-only-focusable:not(:focus-within) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Accessibility: Skip links */
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateY(-100%);
+  z-index: 9999;
+  padding: 1rem 1.5rem;
+  background: #00D26A;
+  color: #111827;
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 0 0 0.5rem 0.5rem;
+  transition: transform 0.3s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+  outline: 2px solid #00F0FF;
+  outline-offset: 2px;
+}
+
+/* Accessibility: High-contrast focus indicators */
+*:focus-visible {
+  outline: 2px solid #00D26A;
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* Accessibility: Focus styles for buttons and links */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #00D26A;
+  outline-offset: 2px;
+}
+
+/* Accessibility: Custom focus for interactive elements on dark backgrounds */
+.dark-focus:focus-visible {
+  outline: 2px solid #00F0FF;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 240, 255, 0.1);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar with enhanced styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gradient-to-b from-naija-green to-neon-cyan rounded-full;
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply from-neon-cyan to-neon-purple;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+/* Safe area insets for mobile devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-area-inset-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-inset-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-area-inset-right {
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Minimum touch target size for accessibility */
+@layer utilities {
+  .touch-target {
+    @apply min-w-[44px] min-h-[44px];
+  }
+}
+
+/* Keyboard Navigation and Focus Indicators - Requirements 15.4, 15.8 */
+@layer base {
+  /* Visible focus indicators for all interactive elements */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-naija-green ring-offset-2 ring-offset-gray-900;
+  }
+
+  /* Enhanced focus for buttons */
+  button:focus-visible,
+  a:focus-visible {
+    @apply outline-none ring-2 ring-naija-green ring-offset-2 ring-offset-gray-900;
+  }
+
+  /* Focus for form inputs */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    @apply outline-none ring-2 ring-neon-cyan ring-offset-2 ring-offset-gray-900;
+  }
+
+  /* Skip link styling - hidden until focused */
+  .skip-link {
+    @apply absolute left-0 top-0 z-[9999] -translate-y-full bg-naija-green px-6 py-3 text-white font-semibold transition-transform rounded-b-lg shadow-lg;
+  }
+
+  .skip-link:focus {
+    @apply translate-y-0;
+  }
+
+  /* Screen reader only content - visible only to screen readers */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Screen reader only but focusable - becomes visible when focused */
+  .sr-only-focusable:not(:focus):not(:focus-within) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+}
+
+/* Keyboard navigation helpers */
+@layer utilities {
+  /* Ensure keyboard-only focus (not mouse clicks) */
+  .focus-keyboard-only:focus:not(:focus-visible) {
+    @apply outline-none ring-0;
+  }
+
+  /* Enhanced focus for cards and interactive containers */
+  .focus-card:focus-visible {
+    @apply ring-2 ring-naija-green ring-offset-2 ring-offset-gray-900 transform scale-[1.02] transition-all;
+  }
+
+  /* Focus for category cards */
+  .focus-category:focus-visible {
+    @apply ring-2 ring-naija-green ring-offset-2 ring-offset-gray-900;
+  }
+
+  /* Focus for listing cards */
+  .focus-listing:focus-visible {
+    @apply ring-2 ring-naija-green ring-offset-2 ring-offset-gray-900 transform -translate-y-2 transition-all;
+  }
+
+  /* Focus for feature cards */
+  .focus-feature:focus-visible {
+    @apply ring-2 ring-naija-green ring-offset-2 ring-offset-gray-900 transform -translate-y-2 transition-all;
+  }
+
+  /* Focus for testimonial cards */
+  .focus-testimonial:focus-visible {
+    @apply ring-2 ring-naija-green ring-offset-2 ring-offset-gray-900 transform -translate-y-1 transition-all;
+  }
+
+  /* Hide scrollbar for horizontal carousel */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

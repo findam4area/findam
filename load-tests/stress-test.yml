@@ -1,0 +1,73 @@
+# Stress Test Configuration
+# Requirements: Testing - Task 77.4
+# Tests system limits and identifies breaking points
+
+config:
+  target: "http://localhost:3000"
+  phases:
+    # Gradual ramp up to find breaking point
+    - duration: 60
+      arrivalRate: 10
+      name: "Phase 1: Light load"
+    - duration: 60
+      arrivalRate: 25
+      name: "Phase 2: Moderate load"
+    - duration: 60
+      arrivalRate: 50
+      name: "Phase 3: Heavy load"
+    - duration: 60
+      arrivalRate: 100
+      name: "Phase 4: Very heavy load"
+    - duration: 60
+      arrivalRate: 200
+      name: "Phase 5: Extreme load"
+    - duration: 60
+      arrivalRate: 500
+      name: "Phase 6: Breaking point"
+
+  http:
+    timeout: 30
+    pool: 200
+
+scenarios:
+  # High-intensity listing browsing
+  - name: "Rapid Listing Browse"
+    weight: 40
+    flow:
+      - loop:
+          - get:
+              url: "/api/listings?limit=50&offset={{ $randomNumber(0, 1000) }}"
+          - think: 0.5
+        count: 5
+
+  # Concurrent search requests
+  - name: "Concurrent Searches"
+    weight: 30
+    flow:
+      - parallel:
+          - get:
+              url: "/api/search?q=laptop"
+          - get:
+              url: "/api/search?q=phone"
+          - get:
+              url: "/api/search?q=car"
+
+  # Database-intensive operations
+  - name: "Complex Queries"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/listings?category=electronics&min_price=10000&max_price=500000&state=Lagos&sort=price_desc&limit=50"
+      - think: 1
+
+  # Write operations
+  - name: "Create Operations"
+    weight: 10
+    flow:
+      - post:
+          url: "/api/listings"
+          json:
+            title: "Stress Test Listing {{ $randomString() }}"
+            description: "Generated during stress test"
+            price: "{{ $randomNumber(1000, 100000) }}"
+            category_id: "test-category"

@@ -1,0 +1,93 @@
+# Normal Load Test Configuration
+# Requirements: Testing - Task 77.4
+# Simulates normal traffic patterns
+
+config:
+  target: "http://localhost:3000"
+  phases:
+    # Warm up phase
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm up"
+    # Ramp up phase
+    - duration: 120
+      arrivalRate: 10
+      rampTo: 20
+      name: "Ramp up"
+    # Sustained load phase
+    - duration: 300
+      arrivalRate: 20
+      name: "Sustained load"
+    # Cool down phase
+    - duration: 60
+      arrivalRate: 5
+      name: "Cool down"
+
+  # Performance thresholds
+  ensure:
+    maxErrorRate: 1 # Max 1% error rate
+    p95: 500 # 95th percentile response time < 500ms
+    p99: 1000 # 99th percentile response time < 1000ms
+
+  # HTTP settings
+  http:
+    timeout: 10
+    pool: 50
+
+  # Variables
+  variables:
+    categories:
+      - "electronics"
+      - "fashion"
+      - "vehicles"
+      - "real-estate"
+    states:
+      - "Lagos"
+      - "Abuja"
+      - "Kano"
+      - "Rivers"
+
+scenarios:
+  # Browse listings scenario (60% of traffic)
+  - name: "Browse Listings"
+    weight: 60
+    flow:
+      - get:
+          url: "/api/listings?limit=20&offset=0"
+          capture:
+            - json: "$.listings[0].id"
+              as: "listingId"
+      - think: 2
+      - get:
+          url: "/api/listings/{{ listingId }}"
+      - think: 3
+
+  # Search scenario (20% of traffic)
+  - name: "Search Products"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/search?q=laptop&limit=20"
+      - think: 2
+      - get:
+          url: "/api/search/autocomplete?q=iph"
+      - think: 1
+
+  # View user profile scenario (10% of traffic)
+  - name: "View Profile"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/users/{{ $randomString() }}"
+      - think: 3
+
+  # Browse categories scenario (10% of traffic)
+  - name: "Browse Categories"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/categories"
+      - think: 2
+      - get:
+          url: "/api/listings?category={{ $randomString() }}&limit=20"
+      - think: 3
