@@ -1,6 +1,6 @@
-# FindAm - Nigerian Marketplace
+# FindAm - A Nigerian Business Directory Marketplace
 
-A youth-focused, gamified classified marketplace platform for the Nigerian market.
+A youth-focused business directory and classified platform for the Nigerian market.
 
 ## Tech Stack
 
